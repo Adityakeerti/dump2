@@ -1,0 +1,76 @@
+{
+  "questions": 40,
+  "embedding_model": "intfloat/multilingual-e5-small",
+  "results": [
+    {
+      "threshold": 0.7,
+      "hit_at_4": {
+        "en": 1.0,
+        "hi": 1.0
+      },
+      "labeled_answerable_counts": {
+        "en": 10,
+        "hi": 10
+      },
+      "unlabeled_answerable": 0,
+      "abstain_precision": null,
+      "abstain_recall": 0.0
+    },
+    {
+      "threshold": 0.75,
+      "hit_at_4": {
+        "en": 1.0,
+        "hi": 1.0
+      },
+      "labeled_answerable_counts": {
+        "en": 10,
+        "hi": 10
+      },
+      "unlabeled_answerable": 0,
+      "abstain_precision": 1.0,
+      "abstain_recall": 0.05
+    },
+    {
+      "threshold": 0.8,
+      "hit_at_4": {
+        "en": 1.0,
+        "hi": 1.0
+      },
+      "labeled_answerable_counts": {
+        "en": 10,
+        "hi": 10
+      },
+      "unlabeled_answerable": 0,
+      "abstain_precision": 1.0,
+      "abstain_recall": 0.3
+    },
+    {
+      "threshold": 0.85,
+      "hit_at_4": {
+        "en": 1.0,
+        "hi": 1.0
+      },
+      "labeled_answerable_counts": {
+        "en": 10,
+        "hi": 10
+      },
+      "unlabeled_answerable": 0,
+      "abstain_precision": 0.9,
+      "abstain_recall": 0.9
+    },
+    {
+      "threshold": 0.9,
+      "hit_at_4": {
+        "en": 1.0,
+        "hi": 1.0
+      },
+      "labeled_answerable_counts": {
+        "en": 10,
+        "hi": 10
+      },
+      "unlabeled_answerable": 0,
+      "abstain_precision": 0.5556,
+      "abstain_recall": 1.0
+    }
+  ]
+}

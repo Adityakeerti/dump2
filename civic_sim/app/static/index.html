@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Civic Simulator</title>
+<style>
+  :root { --bg:#f6f7f9; --card:#fff; --ink:#1d2330; --mute:#667085; --line:#e4e7ec;
+          --muni:#2f6fdb; --police:#c2410c; --ok:#15803d; --warn:#b42318; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#12151b; --card:#1a1f27; --ink:#e6e9ef; --mute:#98a2b3;
+          --line:#2b323d; --muni:#6c9cf0; --police:#f28a52; --ok:#4ade80; --warn:#f87171; } }
+  * { box-sizing:border-box } body { margin:0; font:14px/1.45 system-ui,sans-serif; background:var(--bg); color:var(--ink) }
+  header { display:flex; flex-wrap:wrap; gap:12px; align-items:center; padding:12px 16px; border-bottom:1px solid var(--line); background:var(--card) }
+  header h1 { font-size:16px; margin:0 8px 0 0 } .tag { font-size:11px; padding:2px 6px; border-radius:4px; background:var(--warn); color:#fff }
+  header .stat { color:var(--mute) } header .stat b { color:var(--ink) }
+  button, select { font:inherit; padding:4px 10px; border:1px solid var(--line); border-radius:6px; background:var(--bg); color:var(--ink); cursor:pointer }
+  main { display:grid; grid-template-columns:minmax(280px,420px) 1fr; gap:16px; padding:16px }
+  @media (max-width:860px) { main { grid-template-columns:1fr } }
+  section { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:12px; min-width:0 }
+  h2 { font-size:13px; text-transform:uppercase; letter-spacing:.04em; color:var(--mute); margin:0 0 8px }
+  #grid { display:grid; gap:3px } .cell { aspect-ratio:1; border-radius:4px; position:relative; font-size:10px; padding:3px; color:var(--ink); border:1px solid var(--line) }
+  .cell .n { position:absolute; bottom:2px; right:4px; font-size:10px; color:var(--mute) } .cell.art { outline:2px dashed var(--mute); outline-offset:-3px }
+  .cell.root { box-shadow:inset 0 0 0 3px var(--ok) } .legend { font-size:12px; color:var(--mute); margin-top:8px }
+  .log div, .feed div { padding:4px 0; border-bottom:1px solid var(--line); font-size:13px } .mute { color:var(--mute) }
+  .muni { color:var(--muni) } .police { color:var(--police) } .found { color:var(--ok); font-weight:600 } .bad { color:var(--warn) }
+  .rc { border-left:3px solid var(--ok); padding:6px 10px; margin-bottom:8px } .hyp { border-left:3px dashed var(--mute); padding:4px 10px; margin-bottom:6px }
+  .cols { display:grid; grid-template-columns:1fr 1fr; gap:16px } @media (max-width:860px) { .cols { grid-template-columns:1fr } }
+  .scroll { max-height:340px; overflow:auto }
+</style>
+</head>
+<body>
+<header>
+  <h1>Civic Simulator</h1><span class="tag">SIMULATED</span>
+  <span class="stat">Clock <b id="clock">–</b></span>
+  <span class="stat">Tick <b id="tick">–</b></span>
+  <span class="stat">Policy <b id="policy">–</b></span>
+  <span class="stat">Queues <b id="queues">–</b></span>
+  <span style="flex:1"></span>
+  <select id="pol"><option>rl</option><option>tracer</option><option>complaint_count</option><option>random</option></select>
+  <button id="run">Pause</button><button id="step">Step</button>
+  <select id="scen"><option value="random">random causes</option></select><button id="reset">New episode</button>
+  <a class="stat" href="/docs">API</a>
+</header>
+<main>
+  <section>
+    <h2>City blocks (recent complaints)</h2>
+    <div id="grid"></div>
+    <div class="legend">Blue = municipal complaints, orange = police complaints (last 8 ticks). Number = open potholes.
+      Dashed = arterial road. Green ring = confirmed root cause.</div>
+  </section>
+  <div style="display:grid; gap:16px; min-width:0">
+    <section><h2>Root causes (confirmed by field inspection or repair)</h2><div id="rc"></div></section>
+    <div class="cols">
+      <section><h2>Department actions</h2><div id="log" class="log scroll"></div></section>
+      <section><h2>Complaints from residents</h2><div id="feed" class="feed scroll"></div></section>
+    </div>
+    <section><h2>Previous episode: diagnosis vs hidden truth</h2><div id="last" class="mute">Not finished yet.</div></section>
+  </div>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+const api = (p, body) => fetch('/api/civic/' + p, body ? {method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify(body)} : {}).then(r => r.json());
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let map = null, running = true;
+
+async function init() {
+  map = await api('map');
+  const cols = Math.max(...map.blocks.map(b => +b.name[2])) + 1;
+  $('grid').style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+  const causes = ['water_main_leak','sewer_blockage','missed_waste_route','streetlight_feeder_fault','crime_hotspot'];
+  for (const c of [...causes, 'control']) $('scen').insertAdjacentHTML('beforeend', `<option value="${c}">${c}</option>`);
+  refresh(); setInterval(refresh, 2000);
+}
+
+async function refresh() {
+  const [h, s, d, cs] = await Promise.all([api('health'), api('state'), api('diagnosis'), api('complaints?limit=40')]);
+  running = h.running; $('run').textContent = running ? 'Pause' : 'Run';
+  $('clock').textContent = h.clock; $('tick').textContent = `${h.tick}/${h.horizon}`;
+  $('policy').textContent = h.policy + (h.policy !== h.policy_requested ? ' (no checkpoint)' : ''); $('pol').value = h.policy_requested;
+  $('queues').textContent = `municipal ${s.queues.municipal} · police ${s.queues.police}`;
+  const roots = new Set(d.root_causes.map(r => r.where.block));
+  const max = Math.max(4, ...s.blocks.map(b => b.recent_municipal + b.recent_police));
+  $('grid').innerHTML = s.blocks.map((b, i) => {
+    const m = b.recent_municipal / max, p = b.recent_police / max, meta = map.blocks[i];
+    const bg = `linear-gradient(135deg, rgba(47,111,219,${m}) 50%, rgba(194,65,12,${p}) 50%)`;
+    return `<div class="cell ${meta.arterial ? 'art' : ''} ${roots.has(b.block) ? 'root' : ''}" style="background:${bg}" title="${b.block} ward ${meta.ward}: ${b.recent_municipal} municipal, ${b.recent_police} police">${b.block}<span class="n">${b.potholes || ''}</span></div>`;
+  }).join('');
+  $('rc').innerHTML = (d.root_causes.map(r => `<div class="rc"><b>${esc(r.status)}</b>: ${esc(r.where.asset)} (ward ${r.where.ward}), ${esc(r.responsible_department)}<br>
+      <span class="mute">Started ~${esc(r.started?.estimated ?? 'unclear')} · confirmed ${esc(r.confirmed.at)} by ${esc(r.confirmed.by)} · ${r.affected.complaints} complaints in ${r.affected.blocks} blocks</span><br>
+      Why: ${esc(r.why)}${r.cross_department.map(x => `<br><span class="police">Cross-department: ${esc(x)}</span>`).join('')}</div>`).join('')
+    || '<div class="mute">None confirmed yet.</div>')
+    + d.hypotheses.slice(0, 3).map(h => `<div class="hyp mute">Hypothesis: ${esc(h.asset_name)} (score ${h.score}) → next: ${esc(h.next_step)}</div>`).join('');
+  $('log').innerHTML = s.actions.slice().reverse().filter(a => a.action !== 'wait').map(a => `<div><span class="mute">${esc(a.clock)}</span>
+      <span class="${a.department === 'police' ? 'police' : 'muni'}">${esc(a.department)}</span> ${esc(a.action)} ${esc(a.asset_name)}
+      ${a.found_fault ? '<span class="found">fault found</span>' : (a.action === 'repair' && !['road','traffic'].includes(a.layer) ? '<span class="bad">nothing wrong</span>' : '')}</div>`).join('')
+    || '<div class="mute">Departments are waiting.</div>';
+  $('feed').innerHTML = cs.slice().reverse().map(c => `<div><span class="mute">${esc(c.clock)} · ${esc(c.block)} · ${esc(c.citizen.persona)}${c.text_by === 'llm' ? ' · written by citizen agent' : ''}</span><br>
+      ${esc(c.text)} <span class="${c.department === 'police' ? 'police' : 'muni'}">→ ${esc(c.unit)}</span></div>`).join('');
+  const le = await fetch('/api/civic/last_episode').then(r => r.ok ? r.json() : null);
+  if (le) $('last').innerHTML = `<b>Hidden truth:</b> ${le.ground_truth.map(g => `${esc(g.cause_type)} at ${esc(g.asset_name)} (start tick ${g.onset_tick}, ${g.identified_tick === null ? '<span class="bad">missed</span>' : 'found tick ' + g.identified_tick})`).join('; ') || 'no planted cause (control)'}<br>
+      <b>System reported:</b> ${le.diagnosis.root_causes.map(r => esc(r.where.asset)).join('; ') || 'nothing'}<br>
+      <span class="mute">${le.metrics.complaints} complaints · ${le.metrics.false_repairs} false repairs · ${le.metrics.symptom_actions} symptom fixes · reward ${le.metrics.reward}</span>`;
+}
+
+$('run').onclick = async () => { await api('control', {running: !running}); refresh(); };
+$('step').onclick = async () => { await api('control', {running: false, step: 1}); refresh(); };
+$('pol').onchange = async e => { await api('control', {policy: e.target.value}); refresh(); };
+$('reset').onclick = async () => { const v = $('scen').value; await api('reset', {scenario: v === 'random' ? null : v === 'control' ? [] : [v]}); refresh(); };
+init();
+</script>
+</body>
+</html>

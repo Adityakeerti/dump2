@@ -1,0 +1,188 @@
+# CitySense full stack.
+#
+#   DB only (local dev):      docker compose up -d postgres-postgis
+#   Full stack:               cp .env.example .env && ./scripts/gen-secrets.sh .env
+#                             docker compose up -d --build
+#   Public HTTPS:             set SITE_ADDRESS=your.domain in .env (Caddy issues certificates)
+#
+# Topology (see docs/DEPLOYMENT.md):
+#   :80/:443 reverse-proxy (Caddy) ─┬─ /api/agent/*, /agent/*     → agent-service:8000   (voice agent + planner)
+#                                   ├─ /api/complaint-flow/*      → complaint-module:8001 (SLA escalation)
+#                                   ├─ /api/emergency/*           → emergency-routing:8002 (dispatch, corridors)
+#                                   ├─ /api/*, /ws, /avatars/*    → core:8080            (auth, geo, avatars, complaints)
+#                                   └─ /*                         → citizen web portal (static)
+#   postgres-postgis:5432 is shared: core (Flyway, schema public), agent-service (Alembic, schemas ai/agent),
+#   complaint-module (schema civic_flow). See docs/DATABASE.md.
+
+x-llm-keys: &llm-keys
+  GROQ_API_KEY: ${GROQ_API_KEY:-}
+  GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+  SARVAM_API_KEY: ${SARVAM_API_KEY:-}
+
+services:
+  postgres-postgis:
+    build: ./db
+    image: citysense-db:latest
+    container_name: citysense-db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-citysense}
+      POSTGRES_USER: ${POSTGRES_USER:-citysense}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-citysense}
+    ports:
+      # Loopback only: the database is never exposed publicly.
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
+    volumes:
+      - citysense-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  core:
+    build: ./core
+    image: citysense-core:latest
+    container_name: citysense-core
+    depends_on:
+      postgres-postgis:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-postgis:5432/${POSTGRES_DB:-citysense}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-citysense}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-citysense}
+      # Dev defaults so the stack boots without a .env; scripts/gen-secrets.sh sets real ones.
+      JWT_SECRET: ${JWT_SECRET:-dev-only-secret-change-me-please-32-bytes-min!!}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-key}
+      JWT_EXPIRATION_MINUTES: ${JWT_EXPIRATION_MINUTES:-720}
+      DEMO_MODE: ${DEMO_MODE:-1}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-*}
+      AGENT_SERVICE_URL: http://agent-service:8000
+      # Request log (method, path, status, bytes, ms, content type) for debugging phone traffic.
+      SERVER_TOMCAT_ACCESSLOG_ENABLED: ${CORE_ACCESS_LOG:-false}
+      SERVER_TOMCAT_BASEDIR: /tmp/tomcat
+      SERVER_TOMCAT_ACCESSLOG_DIRECTORY: /tmp
+      SERVER_TOMCAT_ACCESSLOG_PREFIX: access
+      SERVER_TOMCAT_ACCESSLOG_BUFFERED: "false"
+      SERVER_TOMCAT_ACCESSLOG_PATTERN: '%t %a "%r" %s %b %Dms ct="%{Content-Type}i" len=%{Content-Length}i ua="%{User-Agent}i"'
+
+      AGENT_TIMEOUT_SECONDS: ${AGENT_TIMEOUT_SECONDS:-30}
+      CORRELATION_RADIUS_METERS: ${CORRELATION_RADIUS_METERS:-500}
+      CORRELATION_WINDOW_MINUTES: ${CORRELATION_WINDOW_MINUTES:-30}
+      # Email OTP over SMTP (unset host = codes printed to the core log when OTP_LOG_FALLBACK=true)
+      SPRING_MAIL_HOST: ${SPRING_MAIL_HOST:-}
+      SPRING_MAIL_PORT: ${SPRING_MAIL_PORT:-587}
+      SPRING_MAIL_USERNAME: ${SPRING_MAIL_USERNAME:-}
+      SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD:-}
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH:-true}
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE:-true}
+      OTP_MAIL_FROM: ${OTP_MAIL_FROM:-no-reply@citysense.local}
+      OTP_LOG_FALLBACK: ${OTP_LOG_FALLBACK:-true}
+      # Map proxy (OpenStreetMap stack by default; see core/README.md)
+      GEO_USER_AGENT: ${GEO_USER_AGENT:-CitySense/0.1 (+https://github.com/Adityakeerti/CitySense)}
+      GEO_TILE_URL_TEMPLATE: ${GEO_TILE_URL_TEMPLATE:-https://tile.openstreetmap.org/{z}/{x}/{y}.png}
+      GEO_NOMINATIM_URL: ${GEO_NOMINATIM_URL:-https://nominatim.openstreetmap.org}
+      GEO_OSRM_URL: ${GEO_OSRM_URL:-https://router.project-osrm.org}
+      GEO_PUBLIC_BASE_URL: ${GEO_PUBLIC_BASE_URL:-}
+      GEO_DEFAULT_LAT: ${GEO_DEFAULT_LAT:-30.3243}
+      GEO_DEFAULT_LNG: ${GEO_DEFAULT_LNG:-78.0418}
+      GEO_GEOFENCE_RADIUS_METERS: ${GEO_GEOFENCE_RADIUS_METERS:-2500}
+      SEED_AVATARS: ${SEED_AVATARS:-true}
+      SEED_USERS: ${SEED_USERS:-true}
+    ports:
+      - "${CORE_PORT:-8080}:8080"
+    restart: unless-stopped
+
+  agent-service:
+    build: ./agent_service
+    image: citysense-agent:latest
+    container_name: citysense-agent
+    depends_on:
+      postgres-postgis:
+        condition: service_healthy
+    environment:
+      <<: *llm-keys
+      ENVIRONMENT: production
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-citysense}:${POSTGRES_PASSWORD:-citysense}@postgres-postgis:5432/${POSTGRES_DB:-citysense}
+      # Alembic bookkeeping lives in schema "agent" so it never collides with core's Flyway in "public".
+      ALEMBIC_VERSION_SCHEMA: agent
+      JWT_SECRET: ${JWT_SECRET:-dev-only-secret-change-me-please-32-bytes-min!!}
+      # 1 = enables /api/auth/dev-token (used by the React dashboard's Messages page). Keep 0 on public hosts.
+      DEMO_MODE: ${AGENT_DEMO_MODE:-0}
+      USE_SENTENCE_TRANSFORMER: "1"
+      PROVIDER_ORDER: ${PROVIDER_ORDER:-groq,sarvam}
+      STT_PROVIDER_ORDER: ${STT_PROVIDER_ORDER:-sarvam,groq}
+      COMPLAINT_SERVICE_URL: http://complaint-module:8001
+      EMERGENCY_SERVICE_URL: http://emergency-routing:8002
+      CORE_SERVICE_URL: http://core:8080
+      PUBLIC_DATA_APIS: ${PUBLIC_DATA_APIS:-1}
+      # Web search for local area agents (map avatars); unset = they answer without live web results
+      TAVILY_API_KEY: ${TAVILY_API_KEY:-}
+      CORS_ORIGINS: '${AGENT_CORS_ORIGINS:-["*"]}'
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    volumes:
+      - agent-uploads:/app/data/uploads
+    ports:
+      - "${AGENT_PORT:-8000}:8000"
+    restart: unless-stopped
+
+  complaint-module:
+    build: ./complaint_module
+    image: citysense-complaints:latest
+    container_name: citysense-complaints
+    depends_on:
+      postgres-postgis:
+        condition: service_healthy
+    environment:
+      <<: *llm-keys
+      PORT: 8001
+      # Complaints + notices live in the shared database (schema civic_flow); photos stay on the volume.
+      COMPLAINT_DATABASE_URL: postgresql://${POSTGRES_USER:-citysense}:${POSTGRES_PASSWORD:-citysense}@postgres-postgis:5432/${POSTGRES_DB:-citysense}
+      # Govt-portal notice publish/revoke (X-Operator-Key); unset = publishing disabled
+      OPERATOR_KEY: ${OPERATOR_KEY:-}
+    volumes:
+      - complaint-state:/app/state
+    ports:
+      - "${COMPLAINT_PORT:-8001}:8001"
+    restart: unless-stopped
+
+  emergency-routing:
+    build: ./emergency_routing
+    image: citysense-emergency:latest
+    container_name: citysense-emergency
+    environment:
+      <<: *llm-keys
+      PORT: 8002
+      OLLAMA: ${OLLAMA_API_KEY:-}
+    ports:
+      - "${EMERGENCY_PORT:-8002}:8002"
+    restart: unless-stopped
+
+  reverse-proxy:
+    image: caddy:2.8-alpine
+    container_name: citysense-proxy
+    depends_on:
+      - core
+      - agent-service
+      - complaint-module
+      - emergency-routing
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-:80}
+      # Internet-facing name (ngrok static domain); operator routes are blocked under it (see Caddyfile)
+      PUBLIC_HOST: ${NGROK_DOMAIN:-public.invalid}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ${PORTAL_DIR:-../govt_portal}:/srv/portal:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    restart: unless-stopped
+
+volumes:
+  citysense-pgdata:
+  agent-uploads:
+  complaint-state:
+  caddy-data:
+  caddy-config:

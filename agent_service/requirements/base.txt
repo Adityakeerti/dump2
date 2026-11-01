@@ -1,0 +1,14 @@
+alembic==1.20.0
+asyncpg==0.30.0
+fastapi==0.149.0
+httpx==0.28.1
+pgvector==0.5.1
+PyMuPDF==2.0
+pydantic-settings==2.16.0
+sentence-transformers==3.3.1
+sqlmodel==0.0.48
+SQLAlchemy==2.0.55
+pydantic==2.14.1
+PyJWT==2.15.1
+python-multipart==0.0.32
+uvicorn[standard]==0.54.0

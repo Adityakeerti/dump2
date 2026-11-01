@@ -1,0 +1,1134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Emergency Agent OS — Intelligent Dispatch</title>
+  <style>
+    :root {
+      --blue-50:  #eff6ff;
+      --blue-100: #dbeafe;
+      --blue-200: #bfdbfe;
+      --blue-400: #60a5fa;
+      --blue-500: #3b82f6;
+      --blue-600: #2563eb;
+      --blue-700: #1d4ed8;
+      --blue-800: #1e40af;
+      --blue-900: #1e3a8a;
+      --red-400:  #f87171;
+      --red-500:  #ef4444;
+      --red-600:  #dc2626;
+      --amber-400:#fbbf24;
+      --amber-500:#f59e0b;
+      --green-400:#4ade80;
+      --green-500:#22c55e;
+      --green-600:#16a34a;
+      --gray-50:  #f9fafb;
+      --gray-100: #f3f4f6;
+      --gray-200: #e5e7eb;
+      --gray-300: #d1d5db;
+      --gray-400: #9ca3af;
+      --gray-500: #6b7280;
+      --gray-600: #4b5563;
+      --gray-700: #374151;
+      --gray-800: #1f2937;
+      --white:    #ffffff;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--gray-50);
+      color: var(--gray-800);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      min-height: 100vh;
+    }
+
+    /* ── HEADER ── */
+    header {
+      background: var(--blue-700);
+      color: white;
+      padding: 0 24px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 8px rgba(29,78,216,0.3);
+      position: sticky; top: 0; z-index: 100;
+    }
+    .header-left { display: flex; align-items: center; gap: 12px; }
+    .logo {
+      background: rgba(255,255,255,0.2);
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 8px;
+      width: 36px; height: 36px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; font-weight: 800;
+    }
+    .header-title { font-size: 17px; font-weight: 700; }
+    .header-sub { font-size: 11px; opacity: 0.75; margin-top: 1px; }
+    .header-pills { display: flex; gap: 8px; }
+    .pill {
+      font-size: 11px; font-weight: 600;
+      padding: 4px 10px; border-radius: 20px;
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.25);
+      color: white;
+      display: flex; align-items: center; gap: 5px;
+    }
+    .pill .dot { width: 7px; height: 7px; border-radius: 50%; }
+    .dot-green { background: var(--green-400); }
+    .dot-amber { background: var(--amber-400); }
+    .dot-red   { background: var(--red-400); }
+
+    /* ── MAIN LAYOUT ── */
+    .main { display: grid; grid-template-columns: 280px 1fr 300px; gap: 16px; padding: 16px; min-height: calc(100vh - 60px); }
+
+    /* ── CARDS ── */
+    .card {
+      background: white;
+      border-radius: 10px;
+      border: 1px solid var(--gray-200);
+      overflow: hidden;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .card-header {
+      background: var(--blue-700);
+      color: white;
+      padding: 10px 14px;
+      font-size: 12px; font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .card-header.red    { background: var(--red-600); }
+    .card-header.amber  { background: #b45309; }
+    .card-header.green  { background: var(--green-600); }
+    .card-header.gray   { background: var(--gray-700); }
+    .card-body { padding: 12px 14px; }
+
+    /* ── LEFT SIDEBAR ── */
+    .left-col { display: flex; flex-direction: column; gap: 14px; }
+
+    /* Scenario Buttons */
+    .scenario-btn {
+      width: 100%; padding: 10px 12px;
+      border: 1.5px solid var(--blue-200);
+      border-radius: 8px;
+      background: white;
+      color: var(--blue-700);
+      font-size: 13px; font-weight: 600;
+      cursor: pointer; text-align: left;
+      display: flex; align-items: center; gap: 8px;
+      transition: all 0.15s;
+    }
+    .scenario-btn:hover { background: var(--blue-50); border-color: var(--blue-500); }
+    .scenario-btn:active { background: var(--blue-100); }
+    .scenario-btn.loading { opacity: 0.6; cursor: wait; }
+
+    .scenario-icon { font-size: 16px; }
+
+    /* Hospital Cards */
+    .hospital-item {
+      padding: 8px 0;
+      border-bottom: 1px solid var(--gray-100);
+      font-size: 12px;
+    }
+    .hospital-item:last-child { border-bottom: none; }
+    .hospital-name { font-weight: 700; color: var(--gray-800); margin-bottom: 3px; }
+    .hospital-meta { color: var(--gray-500); display: flex; gap: 8px; flex-wrap: wrap; }
+    .badge {
+      display: inline-flex; align-items: center;
+      padding: 1px 6px; border-radius: 4px;
+      font-size: 10px; font-weight: 600;
+    }
+    .badge-blue   { background: var(--blue-100); color: var(--blue-700); }
+    .badge-green  { background: #dcfce7; color: var(--green-600); }
+    .badge-red    { background: #fee2e2; color: var(--red-600); }
+    .badge-amber  { background: #fef3c7; color: #92400e; }
+    .badge-gray   { background: var(--gray-100); color: var(--gray-600); }
+
+    /* Model Status */
+    .model-item {
+      padding: 7px 0;
+      border-bottom: 1px solid var(--gray-100);
+      font-size: 11px;
+    }
+    .model-item:last-child { border-bottom: none; }
+    .model-name { font-weight: 700; color: var(--gray-800); }
+    .model-provider { color: var(--gray-500); }
+
+    /* ── MIDDLE: Pipeline Flow ── */
+    .center-col { display: flex; flex-direction: column; gap: 14px; }
+
+    /* Pipeline steps visualization */
+    .pipeline-flow {
+      display: flex; align-items: flex-start; gap: 0;
+      padding: 14px 0 6px;
+      overflow-x: auto;
+    }
+    .pipeline-step {
+      flex: 1; min-width: 110px;
+      display: flex; flex-direction: column; align-items: center;
+      position: relative;
+    }
+    .pipeline-step:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      top: 18px; right: -12px;
+      width: 24px; height: 2px;
+      background: var(--gray-200);
+      z-index: 1;
+    }
+    .pipeline-step.active::after { background: var(--blue-400); }
+    .pipeline-step.done::after   { background: var(--green-400); }
+
+    .step-circle {
+      width: 36px; height: 36px; border-radius: 50%;
+      border: 2px solid var(--gray-200);
+      background: white;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; position: relative; z-index: 2;
+      transition: all 0.3s;
+    }
+    .pipeline-step.active .step-circle { border-color: var(--blue-500); background: var(--blue-50); box-shadow: 0 0 0 4px var(--blue-100); }
+    .pipeline-step.done   .step-circle { border-color: var(--green-500); background: #dcfce7; }
+    .pipeline-step.error  .step-circle { border-color: var(--red-500);   background: #fee2e2; }
+
+    .step-label { font-size: 10px; font-weight: 600; color: var(--gray-500); margin-top: 6px; text-align: center; }
+    .pipeline-step.active .step-label { color: var(--blue-600); }
+    .pipeline-step.done   .step-label { color: var(--green-600); }
+
+    /* Data stream cards */
+    .data-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    .data-section { }
+    .data-label { font-size: 10px; font-weight: 700; color: var(--gray-400); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+    .data-value { font-size: 13px; font-weight: 600; color: var(--gray-800); }
+    .data-sub   { font-size: 11px; color: var(--gray-500); margin-top: 2px; }
+
+    /* Confidence bar */
+    .conf-bar-outer { background: var(--gray-100); border-radius: 4px; height: 6px; margin-top: 4px; overflow: hidden; }
+    .conf-bar-inner { height: 100%; border-radius: 4px; background: var(--blue-500); transition: width 0.5s; }
+
+    /* LLM Analysis Display */
+    .llm-box {
+      background: var(--blue-50);
+      border: 1px solid var(--blue-200);
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 12px;
+    }
+    .llm-decision-badge {
+      display: inline-block;
+      padding: 3px 10px; border-radius: 6px;
+      font-size: 12px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+    .decision-DISPATCH_AMBULANCE { background: #fee2e2; color: var(--red-600); }
+    .decision-DISPATCH_POLICE    { background: #fef3c7; color: #92400e; }
+    .decision-MONITOR            { background: var(--blue-100); color: var(--blue-700); }
+    .decision-IGNORE             { background: var(--gray-100); color: var(--gray-600); }
+    .decision-NONE               { background: var(--gray-100); color: var(--gray-600); }
+
+    /* Vision analysis */
+    .vision-box {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 12px;
+    }
+
+    /* ── IMAGE UPLOAD ── */
+    .upload-area {
+      border: 2px dashed var(--blue-300);
+      border-radius: 8px;
+      padding: 24px;
+      text-align: center;
+      cursor: pointer;
+      background: var(--blue-50);
+      transition: all 0.15s;
+    }
+    .upload-area:hover { border-color: var(--blue-500); background: var(--blue-100); }
+    .upload-area input { display: none; }
+    .upload-icon { font-size: 28px; margin-bottom: 6px; }
+    .upload-label { font-size: 13px; font-weight: 600; color: var(--blue-700); }
+    .upload-sub { font-size: 11px; color: var(--gray-500); margin-top: 3px; }
+    .upload-preview { max-width: 100%; max-height: 140px; object-fit: cover; border-radius: 6px; margin-top: 8px; display: none; }
+    .analyze-btn {
+      margin-top: 8px; width: 100%;
+      background: var(--blue-700); color: white;
+      border: none; border-radius: 6px; padding: 8px;
+      font-size: 13px; font-weight: 700; cursor: pointer;
+      transition: background 0.15s;
+      display: none;
+    }
+    .analyze-btn:hover { background: var(--blue-800); }
+
+    /* ── RIGHT: AUDIT LOG ── */
+    .right-col { display: flex; flex-direction: column; gap: 14px; }
+
+    .audit-log {
+      height: 320px; overflow-y: auto;
+      padding: 10px;
+      font-size: 11px; line-height: 1.6;
+      font-family: 'Courier New', monospace;
+      background: #1e293b;
+      color: #94a3b8;
+      border-radius: 0 0 8px 8px;
+    }
+    .audit-log .log-entry { padding: 1px 0; border-bottom: 1px solid rgba(255,255,255,0.03); }
+    .log-time  { color: #475569; }
+    .log-start { color: #60a5fa; }
+    .log-vision{ color: #a78bfa; }
+    .log-llm   { color: #34d399; }
+    .log-amb   { color: #f87171; }
+    .log-police{ color: #fbbf24; }
+    .log-done  { color: #6ee7b7; }
+    .log-warn  { color: #fb923c; }
+
+    /* Mission card */
+    .mission-field { padding: 4px 0; border-bottom: 1px solid var(--gray-100); font-size: 12px; display: flex; justify-content: space-between; }
+    .mission-field:last-child { border-bottom: none; }
+    .mission-key { color: var(--gray-500); }
+    .mission-val { font-weight: 600; color: var(--gray-800); text-align: right; max-width: 55%; word-break: break-word; }
+
+    /* Route path */
+    .route-path {
+      display: flex; align-items: center; flex-wrap: wrap; gap: 4px;
+      padding: 8px; background: var(--gray-50); border-radius: 6px;
+      font-size: 11px; font-family: monospace;
+    }
+    .route-node { background: var(--blue-100); color: var(--blue-800); padding: 2px 6px; border-radius: 4px; font-weight: 600; }
+    .route-arrow { color: var(--gray-400); }
+
+    /* ── ALERTS ── */
+    .alert-strip {
+      display: none;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 13px; font-weight: 600;
+      align-items: center; gap: 8px;
+    }
+    .alert-strip.show { display: flex; }
+    .alert-strip.red   { background: #fee2e2; color: var(--red-700); border: 1px solid #fecaca; }
+    .alert-strip.amber { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+    .alert-strip.green { background: #dcfce7; color: var(--green-700); border: 1px solid #bbf7d0; }
+    .alert-strip.blue  { background: var(--blue-50); color: var(--blue-700); border: 1px solid var(--blue-200); }
+
+    /* ── SPINNER ── */
+    .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── EMPTY STATE ── */
+    .empty-state { text-align: center; padding: 30px 14px; color: var(--gray-400); }
+    .empty-icon { font-size: 36px; margin-bottom: 8px; }
+    .empty-text { font-size: 13px; }
+
+    /* ── SCROLLBAR ── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--gray-200); border-radius: 3px; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 900px) {
+      .main { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════ HEADER ══════════════════════ -->
+<header>
+  <div class="header-left">
+    <div class="logo">🚨</div>
+    <div>
+      <div class="header-title">Emergency Agent OS</div>
+      <div class="header-sub">LangGraph · LLM Dispatch · Predictive Routing v2.0</div>
+    </div>
+  </div>
+  <div class="header-pills">
+    <div class="pill" id="pill-backend"><span class="dot dot-amber"></span> Connecting...</div>
+    <div class="pill" id="pill-llm"><span class="dot dot-amber"></span> LLM</div>
+    <div class="pill" id="pill-vision"><span class="dot dot-amber"></span> Vision</div>
+    <div class="pill" id="pill-hospitals">— Hospitals</div>
+  </div>
+</header>
+
+<!-- ══════════════════════ MAIN ══════════════════════ -->
+<div class="main">
+
+  <!-- ════════════════ LEFT SIDEBAR ════════════════ -->
+  <div class="left-col">
+
+    <!-- Video Feed Selector & Streamer -->
+    <div class="card">
+      <div class="card-header" style="background:#2563eb;">📹 CCTV Video Ingestion</div>
+      <div class="card-body">
+        <label style="font-size:11px;font-weight:700;color:var(--gray-600);text-transform:uppercase;margin-bottom:4px;display:block;">Select CCTV Video Feed:</label>
+        <select id="videoSelect" onchange="changeVideoFeed()" style="width:100%;padding:8px;border:1.5px solid var(--blue-200);border-radius:6px;font-size:12px;font-weight:600;margin-bottom:8px;background:var(--blue-50);color:var(--blue-900);">
+          <option value="accident_sample.mp4">🚗 accident_sample.mp4 (Traffic Crash)</option>
+          <option value="fight_sample.mp4">⚔️ fight_sample.mp4 (Public Feud / Fight)</option>
+          <option value="normal_sample.mp4">🛣️ normal_sample.mp4 (Normal Road Traffic)</option>
+        </select>
+        
+        <!-- Embedded Video Player -->
+        <div style="position:relative;background:#000;border-radius:6px;overflow:hidden;margin-bottom:8px;">
+          <video id="cctvPlayer" controls autoplay loop muted style="width:100%;display:block;max-height:160px;object-fit:cover;">
+            <source id="videoSource" src="/videos/accident_sample.mp4" type="video/mp4">
+          </video>
+          <div id="videoBadge" style="position:absolute;top:6px;left:6px;background:rgba(0,0,0,0.7);color:#4ade80;font-family:monospace;font-size:10px;padding:2px 6px;border-radius:4px;display:flex;align-items:center;gap:4px;">
+            <span style="width:6px;height:6px;background:#ef4444;border-radius:50%;display:inline-block;"></span>
+            LIVE CCTV STREAM
+          </div>
+        </div>
+
+        <button class="scenario-btn" id="btnProcessVideo" onclick="processSelectedVideo()" style="background:var(--blue-600);color:white;border-color:var(--blue-700);justify-content:center;font-weight:700;">
+          <span>⚡ Process Video Feed via LangGraph</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Scenarios -->
+    <div class="card">
+      <div class="card-header">🎬 Synthetic Scenarios (plan.md)</div>
+      <div class="card-body" style="display:flex;flex-direction:column;gap:8px;">
+        <button class="scenario-btn" onclick="runScenario('accident-clearing-jam')">
+          <span class="scenario-icon">🚗</span>
+          <div>
+            <div>Accident – Jam Clears</div>
+            <div style="font-size:10px;font-weight:400;color:var(--gray-500);margin-top:1px">Preserve fastest path (t_reach >= t_clear)</div>
+          </div>
+        </button>
+        <button class="scenario-btn" onclick="runScenario('accident-persistent-jam')">
+          <span class="scenario-icon">💥</span>
+          <div>
+            <div>Accident – Persistent Jam</div>
+            <div style="font-size:10px;font-weight:400;color:var(--gray-500);margin-top:1px">Dynamic reroute around bottleneck</div>
+          </div>
+        </button>
+        <button class="scenario-btn" onclick="runScenario('feud')">
+          <span class="scenario-icon">⚔️</span>
+          <div>
+            <div>Feud Timeline (4 events)</div>
+            <div style="font-size:10px;font-weight:400;color:var(--gray-500);margin-top:1px">60s gate & escalation to police</div>
+          </div>
+        </button>
+      </div>
+    </div>
+
+    <!-- Image Upload & Analyze -->
+    <div class="card">
+      <div class="card-header green">📷 Vision + LLM Analysis</div>
+      <div class="card-body">
+        <div class="upload-area" onclick="document.getElementById('imgInput').click()">
+          <input type="file" id="imgInput" accept="image/*" onchange="handleImageSelect(event)">
+          <div class="upload-icon">🖼️</div>
+          <div class="upload-label">Click to upload image</div>
+          <div class="upload-sub">JPG, PNG, WebP supported</div>
+          <img id="imgPreview" class="upload-preview" alt="Preview">
+        </div>
+        <div style="margin-top:8px;">
+          <select id="uploadType" style="width:100%;padding:6px;border:1px solid var(--gray-200);border-radius:6px;font-size:12px;margin-bottom:6px;">
+            <option value="ACCIDENT">ACCIDENT</option>
+            <option value="FEUD">FEUD</option>
+            <option value="UNKNOWN">UNKNOWN (let LLM decide)</option>
+          </select>
+        </div>
+        <button class="analyze-btn" id="analyzeBtn" onclick="analyzeImage()">
+          🔍 Run Vision + LLM Analysis
+        </button>
+      </div>
+    </div>
+
+    <!-- Hospitals -->
+    <div class="card">
+      <div class="card-header">🏥 Hospital Registry</div>
+      <div class="card-body" id="hospitals-list">
+        <div class="empty-state"><div class="empty-icon">🏥</div><div class="empty-text">Loading...</div></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ════════════════ CENTER: PIPELINE ════════════════ -->
+  <div class="center-col">
+
+    <!-- Alert strip -->
+    <div class="alert-strip" id="alert-strip">
+      <span id="alert-icon">⚠️</span>
+      <span id="alert-text">Ready</span>
+    </div>
+
+    <!-- Pipeline flow -->
+    <div class="card">
+      <div class="card-header">⚡ Pipeline Flow</div>
+      <div class="card-body" style="padding-top:0">
+        <div class="pipeline-flow" id="pipeline-flow">
+          <div class="pipeline-step" id="step-vision">
+            <div class="step-circle">👁️</div>
+            <div class="step-label">Vision<br>Analysis</div>
+          </div>
+          <div class="pipeline-step" id="step-llm">
+            <div class="step-circle">🧠</div>
+            <div class="step-label">LLM<br>Classify</div>
+          </div>
+          <div class="pipeline-step" id="step-route">
+            <div class="step-circle">🔀</div>
+            <div class="step-label">Route<br>Decision</div>
+          </div>
+          <div class="pipeline-step" id="step-dispatch">
+            <div class="step-circle">🚑</div>
+            <div class="step-label">Dispatch</div>
+          </div>
+          <div class="pipeline-step" id="step-complete">
+            <div class="step-circle">✅</div>
+            <div class="step-label">Complete</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Incident + Vision data row -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+
+      <!-- Incident Data -->
+      <div class="card">
+        <div class="card-header">📡 Incident Data</div>
+        <div class="card-body" id="incident-data">
+          <div class="empty-state"><div class="empty-icon">📡</div><div class="empty-text">Run a scenario or upload an image</div></div>
+        </div>
+      </div>
+
+      <!-- Vision Analysis -->
+      <div class="card">
+        <div class="card-header green">👁️ Vision Analysis</div>
+        <div class="card-body" id="vision-data">
+          <div class="empty-state"><div class="empty-icon">👁️</div><div class="empty-text">Waiting for pipeline...</div></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- LLM Classification -->
+    <div class="card">
+      <div class="card-header" style="background:#7c3aed;">🧠 LLM Classification Decision</div>
+      <div class="card-body" id="llm-data">
+        <div class="empty-state"><div class="empty-icon">🧠</div><div class="empty-text">LLM decision will appear here</div></div>
+      </div>
+    </div>
+
+    <!-- Ambulance Mission -->
+    <div class="card" id="ambulance-card" style="display:none;">
+      <div class="card-header red">🚑 Ambulance Dispatch Mission</div>
+      <div class="card-body" id="ambulance-data"></div>
+    </div>
+
+    <!-- Police Report -->
+    <div class="card" id="police-card" style="display:none;">
+      <div class="card-header amber">👮 Police Dispatch Report</div>
+      <div class="card-body" id="police-data"></div>
+    </div>
+
+  </div>
+
+  <!-- ════════════════ RIGHT: AUDIT LOG ════════════════ -->
+  <div class="right-col">
+
+    <!-- Model Status -->
+    <div class="card">
+      <div class="card-header" style="background:#7c3aed;">🤖 Active Models (Verified Free)</div>
+      <div class="card-body" id="model-status">
+        <div class="empty-state"><div class="empty-text">Loading model status...</div></div>
+      </div>
+    </div>
+
+    <!-- Audit Log -->
+    <div class="card" style="flex:1;">
+      <div class="card-header gray">📋 Live Audit Log
+        <button onclick="clearLog()" style="margin-left:auto;background:rgba(255,255,255,0.15);border:none;color:white;font-size:10px;padding:2px 7px;border-radius:4px;cursor:pointer;">Clear</button>
+      </div>
+      <div class="audit-log" id="audit-log">
+        <div class="log-entry"><span class="log-start">[SYSTEM]</span> Emergency Agent OS v2.0 initialized. LLM + Vision enabled.</div>
+      </div>
+    </div>
+
+    <!-- Feud Tracking -->
+    <div class="card">
+      <div class="card-header amber">⏱️ Feud Tracker</div>
+      <div class="card-body" id="feud-tracking">
+        <div class="empty-state"><div class="empty-icon">⏱️</div><div class="empty-text">No active feuds tracked</div></div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+const API = '';  // Same origin
+
+// ── UTILITY ──────────────────────────────────────────────────────────────────
+function ts() {
+  return new Date().toLocaleTimeString('en-US', {hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+
+function appendLog(msg, cls='') {
+  const log = document.getElementById('audit-log');
+  const div = document.createElement('div');
+  div.className = 'log-entry';
+  div.innerHTML = `<span class="log-time">[${ts()}]</span> <span class="${cls}">${escHtml(msg)}</span>`;
+  log.appendChild(div);
+  log.scrollTop = log.scrollHeight;
+}
+
+function clearLog() {
+  document.getElementById('audit-log').innerHTML = '<div class="log-entry"><span class="log-start">[SYSTEM]</span> Log cleared.</div>';
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function showAlert(text, type='blue', icon='ℹ️') {
+  const el = document.getElementById('alert-strip');
+  el.className = `alert-strip show ${type}`;
+  document.getElementById('alert-icon').textContent = icon;
+  document.getElementById('alert-text').textContent = text;
+}
+
+function hideAlert() {
+  document.getElementById('alert-strip').className = 'alert-strip';
+}
+
+function setPipelineStep(step, state) {
+  // step: 'vision'|'llm'|'route'|'dispatch'|'complete', state: 'active'|'done'|'error'|''
+  const el = document.getElementById(`step-${step}`);
+  if (!el) return;
+  el.className = `pipeline-step ${state}`;
+}
+
+function resetPipeline() {
+  ['vision','llm','route','dispatch','complete'].forEach(s => setPipelineStep(s,''));
+}
+
+function confBar(val) {
+  const pct = Math.round((val||0)*100);
+  return `<div class="conf-bar-outer"><div class="conf-bar-inner" style="width:${pct}%"></div></div>`;
+}
+
+// ── HEALTH CHECK ─────────────────────────────────────────────────────────────
+async function checkHealth() {
+  try {
+    const r = await fetch(`${API}/api/health`);
+    if (!r.ok) throw new Error();
+    const d = await r.json();
+    document.getElementById('pill-backend').innerHTML = '<span class="dot dot-green"></span> Online';
+    document.getElementById('pill-llm').innerHTML = '<span class="dot dot-green"></span> LLM Ready';
+    document.getElementById('pill-vision').innerHTML = '<span class="dot dot-green"></span> Vision Ready';
+    document.getElementById('pill-hospitals').innerHTML = `🏥 ${d.active_hospitals} Hospitals`;
+    appendLog(`Backend online. LLM: ${d.llm_primary_model} | Vision: ${d.vision_primary_model} (${d.vision_primary_provider})`, 'log-start');
+  } catch(e) {
+    document.getElementById('pill-backend').innerHTML = '<span class="dot dot-red"></span> Offline';
+    appendLog('Backend connection failed. Start server with: uvicorn server:app --reload', 'log-warn');
+  }
+}
+
+// ── LOAD HOSPITALS ───────────────────────────────────────────────────────────
+async function loadHospitals() {
+  try {
+    const r = await fetch(`${API}/api/hospitals`);
+    const d = await r.json();
+    const el = document.getElementById('hospitals-list');
+    el.innerHTML = d.hospitals.map(h => `
+      <div class="hospital-item">
+        <div class="hospital-name">${escHtml(h.name)}</div>
+        <div class="hospital-meta">
+          <span class="badge badge-blue">L${h.trauma_level}</span>
+          <span class="badge badge-green">${h.er_beds_available} ER beds</span>
+          <span class="badge badge-${h.ambulances.filter(a=>a.status==='AVAILABLE').length>0?'green':'red'}">
+            ${h.ambulances.filter(a=>a.status==='AVAILABLE').length} AMB avail
+          </span>
+        </div>
+      </div>
+    `).join('');
+  } catch(e) {
+    document.getElementById('hospitals-list').innerHTML = '<div class="empty-state"><div class="empty-text">Could not load hospitals</div></div>';
+  }
+}
+
+// ── LOAD MODEL STATUS ────────────────────────────────────────────────────────
+async function loadModelStatus() {
+  try {
+    const r = await fetch(`${API}/api/model-status`);
+    const d = await r.json();
+    const el = document.getElementById('model-status');
+    const vision = d.vision_models.slice(0,2).map(m => `
+      <div class="model-item">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span class="model-name">${escHtml(m.model)}</span>
+          <span class="badge badge-green">Vision ✓</span>
+        </div>
+        <div class="model-provider">${m.provider} · Free</div>
+      </div>
+    `).join('');
+    const text = d.text_models.slice(0,2).map(m => `
+      <div class="model-item">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span class="model-name">${escHtml(m.model)}</span>
+          <span class="badge badge-blue">Text</span>
+        </div>
+        <div class="model-provider">${m.provider} · Free</div>
+      </div>
+    `).join('');
+    el.innerHTML = `
+      <div style="font-size:10px;font-weight:700;color:var(--gray-400);text-transform:uppercase;margin-bottom:4px;">Vision Models</div>
+      ${vision}
+      <div style="font-size:10px;font-weight:700;color:var(--gray-400);text-transform:uppercase;margin:8px 0 4px;">Classifier Models</div>
+      ${text}
+      <div style="font-size:10px;color:var(--gray-400);margin-top:6px;">Verified: ${d.last_checked}</div>
+    `;
+  } catch(e) {}
+}
+
+// ── RENDER SCENARIO RESULT ───────────────────────────────────────────────────
+function renderState(state) {
+  const inc = state.current_incident;
+  const llm = state.llm_analysis;
+  const amb = state.ambulance_mission;
+  const pol = state.police_report;
+  const feud = state.feud_tracking || {};
+
+  // Incident Data
+  document.getElementById('incident-data').innerHTML = inc ? `
+    <div class="data-grid">
+      <div class="data-section">
+        <div class="data-label">Incident ID</div>
+        <div class="data-value" style="font-size:11px;">${escHtml(inc.incident_id)}</div>
+      </div>
+      <div class="data-section">
+        <div class="data-label">Type</div>
+        <div class="data-value"><span class="badge badge-${inc.incident_type==='ACCIDENT'?'red':'amber'}">${inc.incident_type}</span></div>
+      </div>
+      <div class="data-section">
+        <div class="data-label">CV Confidence</div>
+        <div class="data-value">${Math.round(inc.confidence*100)}%</div>
+        ${confBar(inc.confidence)}
+      </div>
+      <div class="data-section">
+        <div class="data-label">CV Severity</div>
+        <div class="data-value">${Math.round(inc.severity*100)}%</div>
+        ${confBar(inc.severity)}
+      </div>
+      <div class="data-section" style="grid-column:1/-1;">
+        <div class="data-label">Location</div>
+        <div class="data-value" style="font-size:12px;">${escHtml(inc.address)}</div>
+        <div class="data-sub">Camera: ${escHtml(inc.camera_id)}</div>
+      </div>
+      ${inc.frame_image_ref ? `
+        <div style="grid-column:1/-1;margin-top:4px;">
+          <div class="data-label">Extracted CCTV Key Frame</div>
+          <img src="data:image/jpeg;base64,${inc.frame_image_ref}" style="width:100%;max-height:130px;object-fit:cover;border-radius:6px;border:1px solid var(--blue-200);">
+        </div>
+      ` : ''}
+    </div>
+  ` : '<div class="empty-state"><div class="empty-icon">📡</div><div class="empty-text">No incident data</div></div>';
+
+  // Vision Analysis
+  if (llm && llm.vision_detected_type) {
+    document.getElementById('vision-data').innerHTML = `
+      <div class="vision-box">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">
+          <span><strong>Detected:</strong> <span class="badge badge-${llm.vision_detected_type==='ACCIDENT'?'red':llm.vision_detected_type==='FEUD'?'amber':'gray'}">${llm.vision_detected_type}</span></span>
+          <span class="badge badge-gray">${escHtml(llm.vision_method||'')}</span>
+        </div>
+        <div style="margin-bottom:6px;"><strong>Description:</strong><br><span style="color:var(--gray-700);">${escHtml(llm.vision_description||'—')}</span></div>
+        <div class="data-grid" style="gap:8px;">
+          <div>
+            <div class="data-label">Confidence</div>
+            <div class="data-value">${llm.vision_confidence!=null?Math.round(llm.vision_confidence*100)+'%':'—'}</div>
+            ${confBar(llm.vision_confidence)}
+          </div>
+          <div>
+            <div class="data-label">Severity Est.</div>
+            <div class="data-value">${llm.vision_severity!=null?Math.round(llm.vision_severity*100)+'%':'—'}</div>
+            ${confBar(llm.vision_severity)}
+          </div>
+        </div>
+        <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
+          ${llm.vision_injuries_visible?'<span class="badge badge-red">⚠️ Injuries Visible</span>':''}
+          ${llm.vision_weapons_visible?'<span class="badge badge-red">🔫 Weapons Visible</span>':''}
+        </div>
+        <div style="margin-top:8px;font-size:10px;color:var(--gray-500);">Model: ${escHtml(llm.vision_model||'—')} via ${escHtml(llm.vision_provider||'—')}</div>
+      </div>
+    `;
+  } else {
+    document.getElementById('vision-data').innerHTML = '<div class="empty-state"><div class="empty-icon">👁️</div><div class="empty-text">No vision data</div></div>';
+  }
+
+  // LLM Classification
+  if (llm && llm.llm_decision) {
+    document.getElementById('llm-data').innerHTML = `
+      <div class="llm-box">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+          <span class="llm-decision-badge decision-${llm.llm_decision}">${llm.llm_decision.replace(/_/g,' ')}</span>
+          <span class="badge badge-gray">🤖 ${escHtml(llm.llm_model||'—')}</span>
+          ${llm.llm_confidence!=null?`<span class="badge badge-blue">Confidence: ${Math.round(llm.llm_confidence*100)}%</span>`:''}
+        </div>
+        <div style="margin-top:8px;font-size:12px;color:var(--gray-700);">
+          <strong>Rationale:</strong> ${escHtml(llm.llm_rationale||'—')}
+        </div>
+        ${llm.llm_severity_override!=null?`<div style="margin-top:4px;font-size:11px;color:var(--blue-600);">LLM Severity Override: ${Math.round(llm.llm_severity_override*100)}%</div>`:''}
+      </div>
+    `;
+  } else {
+    document.getElementById('llm-data').innerHTML = '<div class="empty-state"><div class="empty-icon">🧠</div><div class="empty-text">LLM decision pending</div></div>';
+  }
+
+  // Ambulance Mission
+  if (amb) {
+    document.getElementById('ambulance-card').style.display = '';
+    document.getElementById('ambulance-data').innerHTML = `
+      <div class="mission-field"><span class="mission-key">Mission ID</span><span class="mission-val">${escHtml(amb.mission_id)}</span></div>
+      <div class="mission-field"><span class="mission-key">Ambulance</span><span class="mission-val">${escHtml(amb.ambulance_id)}</span></div>
+      <div class="mission-field"><span class="mission-key">Hospital</span><span class="mission-val">${escHtml(amb.hospital_name)}</span></div>
+      <div class="mission-field"><span class="mission-key">ETA</span><span class="mission-val">${amb.estimated_arrival_minutes.toFixed(1)} min</span></div>
+      <div class="mission-field"><span class="mission-key">Distance</span><span class="mission-val">${amb.total_distance_km.toFixed(1)} km</span></div>
+      <div class="mission-field"><span class="mission-key">Rerouted</span><span class="mission-val"><span class="badge ${amb.rerouted?'badge-amber':'badge-green'}">${amb.rerouted?'YES – Alternate Route':'NO – Fastest Path'}</span></span></div>
+      <div style="margin-top:8px;">
+        <div class="data-label">Route Path</div>
+        <div class="route-path">
+          ${amb.route_nodes.map(n=>`<span class="route-node">${escHtml(n)}</span>`).join('<span class="route-arrow">→</span>')}
+        </div>
+      </div>
+      <div style="margin-top:6px;font-size:11px;color:var(--gray-500);">${escHtml(amb.routing_reason)}</div>
+    `;
+  } else {
+    document.getElementById('ambulance-card').style.display = 'none';
+  }
+
+  // Police Report
+  if (pol) {
+    document.getElementById('police-card').style.display = '';
+    document.getElementById('police-data').innerHTML = `
+      <div class="mission-field"><span class="mission-key">Report ID</span><span class="mission-val">${escHtml(pol.report_id)}</span></div>
+      <div class="mission-field"><span class="mission-key">Type</span><span class="mission-val"><span class="badge badge-amber">${escHtml(pol.incident_type)}</span></span></div>
+      <div class="mission-field"><span class="mission-key">Duration</span><span class="mission-val">${pol.dispute_duration_seconds.toFixed(1)}s</span></div>
+      <div class="mission-field"><span class="mission-key">Avg Intensity</span><span class="mission-val">${Math.round(pol.average_intensity*100)}%</span></div>
+      <div class="mission-field"><span class="mission-key">Camera</span><span class="mission-val">${escHtml(pol.camera_id)}</span></div>
+      <div class="mission-field"><span class="mission-key">Status</span><span class="mission-val"><span class="badge badge-red">${escHtml(pol.status)}</span></span></div>
+    `;
+  } else {
+    document.getElementById('police-card').style.display = 'none';
+  }
+
+  // Feud Tracking
+  const feudKeys = Object.keys(feud);
+  if (feudKeys.length > 0) {
+    document.getElementById('feud-tracking').innerHTML = feudKeys.map(cam => {
+      const f = feud[cam];
+      const dur = f.elapsed_duration_seconds || 0;
+      const pct = Math.min(100, (dur / 60) * 100);
+      return `
+        <div style="padding:8px 0;border-bottom:1px solid var(--gray-100);">
+          <div style="font-size:11px;font-weight:700;">${escHtml(cam)}</div>
+          <div style="font-size:11px;color:var(--gray-500);margin:3px 0;">Duration: ${dur.toFixed(1)}s / 60s threshold</div>
+          <div class="conf-bar-outer"><div class="conf-bar-inner" style="width:${pct}%;background:${pct>=100?'var(--red-500)':'var(--amber-500)'}"></div></div>
+          <div style="margin-top:3px;font-size:10px;">
+            <span class="badge ${f.police_alerted?'badge-red':'badge-gray'}">${f.police_alerted?'POLICE ALERTED':'Monitoring'}</span>
+            ${f.is_active?'<span class="badge badge-amber" style="margin-left:4px;">Active</span>':''}
+          </div>
+        </div>
+      `;
+    }).join('');
+  } else {
+    document.getElementById('feud-tracking').innerHTML = '<div class="empty-state"><div class="empty-icon">⏱️</div><div class="empty-text">No active feuds</div></div>';
+  }
+
+  // Audit log
+  if (state.audit_log && state.audit_log.length > 0) {
+    state.audit_log.forEach(msg => {
+      let cls = 'log-start';
+      if (msg.includes('[VISION]')) cls = 'log-vision';
+      else if (msg.includes('[LLM')) cls = 'log-llm';
+      else if (msg.includes('[AMBULANCE]')) cls = 'log-amb';
+      else if (msg.includes('[POLICE]')) cls = 'log-police';
+      else if (msg.includes('COMPLETED')) cls = 'log-done';
+      else if (msg.includes('[FEUD')) cls = 'log-warn';
+      appendLog(msg, cls);
+    });
+  }
+}
+
+// ── RUN SCENARIO ─────────────────────────────────────────────────────────────
+async function runScenario(name) {
+  resetPipeline();
+  document.getElementById('ambulance-card').style.display = 'none';
+  document.getElementById('police-card').style.display = 'none';
+
+  const btns = document.querySelectorAll('.scenario-btn');
+  btns.forEach(b => b.classList.add('loading'));
+
+  showAlert(`Running scenario: ${name}...`, 'blue', '⚡');
+  appendLog(`>>> Triggering scenario: ${name}`, 'log-start');
+
+  // Animate pipeline
+  setPipelineStep('vision', 'active');
+
+  try {
+    const r = await fetch(`${API}/api/run-scenario/${encodeURIComponent(name)}`);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const data = await r.json();
+
+    // Handle feud timeline (array of results)
+    let state = data;
+    if (data.timeline_results) {
+      appendLog(`Feud timeline: ${data.timeline_results.length} events processed.`, 'log-warn');
+      // Render final state
+      state = data.timeline_results[data.timeline_results.length - 1];
+      data.timeline_results.forEach((s, i) => {
+        appendLog(`Event ${i+1}: step=${s.workflow_step} | ${s.decision_summary?.slice(0,80)||''}`, 'log-warn');
+      });
+    }
+
+    // Animate steps based on result
+    setTimeout(() => setPipelineStep('vision', 'done'), 100);
+    setTimeout(() => setPipelineStep('llm', 'done'), 400);
+    setTimeout(() => setPipelineStep('route', 'done'), 700);
+
+    const step = state.workflow_step || '';
+    const hasAmb = !!state.ambulance_mission;
+    const hasPol = !!state.police_report;
+
+    setTimeout(() => {
+      setPipelineStep('dispatch', hasAmb || hasPol ? 'done' : 'active');
+      setPipelineStep('complete', 'done');
+    }, 1000);
+
+    // Show alert
+    if (hasAmb) showAlert(`Ambulance dispatched! Mission ${state.ambulance_mission.mission_id}`, 'red', '🚑');
+    else if (hasPol) showAlert(`Police alerted! Case ${state.police_report.report_id}`, 'amber', '👮');
+    else showAlert(`Pipeline complete. Step: ${step}`, 'green', '✅');
+
+    renderState(state);
+  } catch(e) {
+    setPipelineStep('vision', 'error');
+    showAlert(`Error: ${e.message}`, 'red', '❌');
+    appendLog(`ERROR: ${e.message}`, 'log-warn');
+  }
+
+  btns.forEach(b => b.classList.remove('loading'));
+}
+
+// ── IMAGE UPLOAD + ANALYZE ───────────────────────────────────────────────────
+let selectedImageB64 = null;
+
+function handleImageSelect(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const preview = document.getElementById('imgPreview');
+    preview.src = e.target.result;
+    preview.style.display = 'block';
+    // Strip data URL prefix to get raw base64
+    selectedImageB64 = e.target.result.split(',')[1];
+    document.getElementById('analyzeBtn').style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+
+async function analyzeImage() {
+  if (!selectedImageB64) return;
+  const btn = document.getElementById('analyzeBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Analyzing...';
+
+  resetPipeline();
+  setPipelineStep('vision', 'active');
+  showAlert('Running vision analysis + LLM classification...', 'blue', '🔍');
+  appendLog('>>> Running vision + LLM analysis on uploaded image...', 'log-vision');
+
+  const incidentType = document.getElementById('uploadType').value;
+
+  try {
+    const r = await fetch(`${API}/api/analyze-image`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        image_b64: selectedImageB64,
+        incident_type: incidentType,
+        confidence: 0.75,
+        severity: 0.65,
+        address: 'Uploaded Image Location',
+        camera_id: 'CAM-UPLOAD',
+      }),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const data = await r.json();
+
+    setPipelineStep('vision', 'done');
+    setPipelineStep('llm', 'done');
+    setPipelineStep('route', 'done');
+
+    const va = data.vision_analysis;
+    const lc = data.llm_classification;
+
+    // Populate panels directly
+    document.getElementById('incident-data').innerHTML = `
+      <div class="data-grid">
+        <div class="data-section">
+          <div class="data-label">Type (Input)</div>
+          <div class="data-value"><span class="badge badge-blue">${incidentType}</span></div>
+        </div>
+        <div class="data-section">
+          <div class="data-label">Source</div>
+          <div class="data-value" style="font-size:11px;">Uploaded Image</div>
+        </div>
+      </div>
+    `;
+
+    if (va) {
+      document.getElementById('vision-data').innerHTML = `
+        <div class="vision-box">
+          <div style="margin-bottom:6px;"><span class="badge badge-${va.detected_type==='ACCIDENT'?'red':va.detected_type==='FEUD'?'amber':'gray'}">${va.detected_type}</span></div>
+          <div style="font-size:12px;margin-bottom:8px;">${escHtml(va.description)}</div>
+          <div class="data-grid" style="gap:8px;">
+            <div><div class="data-label">Confidence</div><div class="data-value">${Math.round(va.confidence*100)}%</div>${confBar(va.confidence)}</div>
+            <div><div class="data-label">Severity</div><div class="data-value">${Math.round(va.severity_estimate*100)}%</div>${confBar(va.severity_estimate)}</div>
+          </div>
+          <div style="margin-top:6px;display:flex;gap:4px;flex-wrap:wrap;">
+            ${va.injuries_visible?'<span class="badge badge-red">⚠️ Injuries</span>':''}
+            ${va.weapons_visible?'<span class="badge badge-red">🔫 Weapons</span>':''}
+            ${va.vehicles_visible?'<span class="badge badge-blue">🚗 Vehicles</span>':''}
+          </div>
+          <div style="margin-top:6px;font-size:10px;color:var(--gray-500);">${escHtml(va.model_used)} (${escHtml(va.analysis_method)})</div>
+        </div>
+      `;
+    }
+
+    if (lc) {
+      document.getElementById('llm-data').innerHTML = `
+        <div class="llm-box">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
+            <span class="llm-decision-badge decision-${lc.decision}">${(lc.decision||'').replace(/_/g,' ')}</span>
+            <span class="badge badge-gray">🤖 ${escHtml(lc.model_used||'—')}</span>
+            <span class="badge badge-blue">Confidence: ${Math.round((lc.confidence||0)*100)}%</span>
+          </div>
+          <div style="font-size:12px;color:var(--gray-700);"><strong>Rationale:</strong> ${escHtml(lc.rationale||'—')}</div>
+        </div>
+      `;
+    }
+
+    setPipelineStep('complete', 'done');
+
+    const decText = lc ? lc.decision : 'UNKNOWN';
+    if (decText === 'DISPATCH_AMBULANCE') showAlert('LLM: Dispatch Ambulance recommended!', 'red', '🚑');
+    else if (decText === 'DISPATCH_POLICE') showAlert('LLM: Dispatch Police recommended!', 'amber', '👮');
+    else if (decText === 'MONITOR') showAlert('LLM: Monitor situation.', 'blue', '👁️');
+    else showAlert('LLM analysis complete.', 'green', '✅');
+
+    appendLog(`Vision: ${va?.detected_type||'?'} | LLM Decision: ${lc?.decision||'?'} | ${lc?.rationale?.slice(0,60)||''}`, 'log-llm');
+  } catch(e) {
+    setPipelineStep('vision', 'error');
+    showAlert(`Analysis error: ${e.message}`, 'red', '❌');
+    appendLog(`ERROR: ${e.message}`, 'log-warn');
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '🔍 Run Vision + LLM Analysis';
+}
+
+// ── VIDEO FEED CONTROLLER ───────────────────────────────────────────────────
+function changeVideoFeed() {
+  const select = document.getElementById('videoSelect');
+  const player = document.getElementById('cctvPlayer');
+  const source = document.getElementById('videoSource');
+  const val = select.value;
+  source.src = `/videos/${val}`;
+  player.load();
+  player.play().catch(()=>{});
+  showAlert(`Loaded feed: ${val}`, 'blue', '📹');
+  appendLog(`Switched CCTV camera stream to: ${val}`, 'log-start');
+}
+
+async function loadVideosList() {
+  try {
+    const r = await fetch(`${API}/api/videos-list`);
+    if (!r.ok) return;
+    const d = await r.json();
+    if (d.videos && d.videos.length > 0) {
+      const sel = document.getElementById('videoSelect');
+      sel.innerHTML = d.videos.map(v => {
+        let icon = '📹';
+        if (v.name.includes('accident')) icon = '🚗';
+        else if (v.name.includes('fight')) icon = '⚔️';
+        else if (v.name.includes('normal')) icon = '🛣️';
+        return `<option value="${v.name}">${icon} ${v.name} (${v.size_mb} MB)</option>`;
+      }).join('');
+      changeVideoFeed();
+    }
+  } catch(e) {}
+}
+
+async function processSelectedVideo() {
+  const select = document.getElementById('videoSelect');
+  const videoName = select.value;
+  const btn = document.getElementById('btnProcessVideo');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Processing Stream...';
+
+  resetPipeline();
+  setPipelineStep('vision', 'active');
+  showAlert(`Ingesting ${videoName} through Vision + LangGraph Pipeline...`, 'blue', '📹');
+  appendLog(`>>> Ingesting CCTV video feed: ${videoName}`, 'log-start');
+
+  try {
+    const r = await fetch(`${API}/api/process-video/${encodeURIComponent(videoName)}`);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const data = await r.json();
+
+    setPipelineStep('vision', 'done');
+    setPipelineStep('llm', 'done');
+    setPipelineStep('route', 'done');
+
+    const state = data.state;
+    const hasAmb = !!state.ambulance_mission;
+    const hasPol = !!state.police_report;
+
+    setTimeout(() => {
+      setPipelineStep('dispatch', hasAmb || hasPol ? 'done' : 'active');
+      setPipelineStep('complete', 'done');
+    }, 600);
+
+    if (hasAmb) {
+      showAlert(`Accident Verified! Ambulance dispatched from ${state.ambulance_mission.hospital_name}`, 'red', '🚑');
+    } else if (hasPol) {
+      showAlert(`Feud Escalated! Police dispatch alert sent to teammate agent`, 'amber', '👮');
+    } else {
+      showAlert(`Video Ingestion Complete: Normal traffic monitored`, 'green', '✅');
+    }
+
+    renderState(state);
+  } catch(e) {
+    setPipelineStep('vision', 'error');
+    showAlert(`Error: ${e.message}`, 'red', '❌');
+    appendLog(`ERROR: ${e.message}`, 'log-warn');
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '<span>⚡ Process Video Feed via LangGraph</span>';
+}
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
+(async () => {
+  await checkHealth();
+  await loadVideosList();
+  await loadHospitals();
+  await loadModelStatus();
+  appendLog('Ready. Select a CCTV video or scenario to run.', 'log-done');
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,116 @@
+# CitySense public entrypoint. SITE_ADDRESS=":80" serves plain HTTP on any host;
+# SITE_ADDRESS="citysense.example.com" makes Caddy obtain and renew a TLS certificate automatically.
+#
+# PUBLIC_HOST is the internet-facing name (the ngrok static domain, see scripts/tunnel.sh). Requests
+# arriving under that name may only use what the citizen app needs; operator tools (dashboard, demo
+# token minting, emergency console, complaint resolve/escalate) stay LAN-only. Notice publishing is
+# allowed publicly only with an X-Operator-Key header, which complaint-module validates.
+{$SITE_ADDRESS::80} {
+	encode zstd gzip
+
+	request_body {
+		max_size 12MB
+	}
+
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+
+	@publicOperator {
+		host {$PUBLIC_HOST:public.invalid}
+		path /agent /agent/* /api/emergency/* /api/complaint-flow/*
+		not path /api/complaint-flow/api/meta /api/complaint-flow/api/notices /api/complaint-flow/api/notices/* /api/complaint-flow/api/complaints /api/complaint-flow/api/complaints/* /api/complaint-flow/api/photos/*
+	}
+	# Notice publish/revoke from the Vercel portal arrives here; complaint-module checks the key's value.
+	@publicNoticeWrite {
+		host {$PUBLIC_HOST:public.invalid}
+		path /api/complaint-flow/api/notices*
+		not method GET HEAD
+		not header X-Operator-Key *
+	}
+	@publicComplaintAction {
+		host {$PUBLIC_HOST:public.invalid}
+		path_regexp ^/api/complaint-flow/api/complaints/[^/]+/.+$
+	}
+
+	# `route` keeps the order below literal: guards first, then most specific paths first.
+	route {
+		handle @publicOperator {
+			respond "Not available on the public address" 403
+		}
+		handle @publicNoticeWrite {
+			respond "Not available on the public address" 403
+		}
+		handle @publicComplaintAction {
+			respond "Not available on the public address" 403
+		}
+
+		# Voice agent + planner (STT, TTS, chat, action confirmation)
+		handle /api/agent/* {
+			reverse_proxy agent-service:8000 {
+				# Long LLM / speech calls
+				transport http {
+					read_timeout 120s
+				}
+			}
+		}
+
+		# Agent landing page and probes: /agent/ui, /agent/health, /agent/ready, /agent/api/auth/dev-token
+		handle /agent {
+			redir * /agent/ui
+		}
+		handle /agent/* {
+			uri strip_prefix /agent
+			reverse_proxy agent-service:8000
+		}
+
+		# Complaint module, mobile-app form: <base>/api/complaint-flow + /api/complaints -> /api/complaints
+		handle /api/complaint-flow/api/* {
+			uri strip_prefix /api/complaint-flow
+			reverse_proxy complaint-module:8001
+		}
+		# Complaint module, dashboard form: /api/complaint-flow/feed -> /api/feed
+		handle /api/complaint-flow/* {
+			uri replace /api/complaint-flow/ /api/ 1
+			reverse_proxy complaint-module:8001
+		}
+
+		# Emergency dispatch, corridors, CCTV triage: /api/emergency/dispatch -> /api/dispatch
+		handle /api/emergency/* {
+			uri replace /api/emergency/ /api/ 1
+			reverse_proxy emergency-routing:8002
+		}
+
+		# Spring Boot core: auth, geo, avatars, civic complaints, live websocket, docs, APK
+		handle /api/* {
+			reverse_proxy core:8080
+		}
+		handle /ws* {
+			reverse_proxy core:8080
+		}
+		handle /avatars/* {
+			reverse_proxy core:8080
+		}
+		handle /actuator/health* {
+			reverse_proxy core:8080
+		}
+		handle /swagger-ui* {
+			reverse_proxy core:8080
+		}
+		handle /v3/api-docs* {
+			reverse_proxy core:8080
+		}
+		handle /*.apk {
+			reverse_proxy core:8080
+		}
+
+		# Citizen web portal (static)
+		handle {
+			root * /srv/portal
+			try_files {path} {path}.html /index.html
+			file_server
+		}
+	}
+}

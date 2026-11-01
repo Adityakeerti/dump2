@@ -1,0 +1,115 @@
+{
+  "_comment": "Popular Dehradun businesses for the Townhall feed and agent recommendations. Researched 2026-11-01; every row cites its source. Several sources are aggregators: confirm a listing is still open before relying on it. coordsPrecision 'approximate' = locality/junction centre, not the shop door.",
+  "businesses": [
+    {
+      "key": "kingdom-of-momos",
+      "name": "Kingdom of Momos",
+      "category": "restaurant",
+      "locality": "Clement Town / Bell Road / Mohabbewala",
+      "description": "A casual, budget-friendly eatery in New Basti, Clement Town, known for momos and other fast food and described as a local favourite for momos in Clement Town.",
+      "latitude": 30.2613,
+      "longitude": 78.012,
+      "coordsPrecision": "approximate",
+      "sourceUrl": "https://www.explurger.com/pd/o6hmxh4xycoibucuj"
+    },
+    {
+      "key": "old-monkeys-cafe",
+      "name": "The Old Monkeys Cafe & Restaurant",
+      "category": "cafe",
+      "locality": "Clement Town / Bell Road / Mohabbewala",
+      "description": "A cafe at CR Towers, Char Khamba Chowk, Clement Town (Subhash Nagar), with a hanging swing, artificial lawn and sofas, serving American, Italian, Mexican and Chinese food.",
+      "latitude": 30.268,
+      "longitude": 77.996,
+      "coordsPrecision": "approximate",
+      "sourceUrl": "https://www.tripoto.com/trip/cafes-in-dehradun-guide"
+    },
+    {
+      "key": "kumar-sweet-shop",
+      "name": "Kumar Sweet Shop",
+      "category": "sweets",
+      "locality": "Paltan Bazaar / Clock Tower",
+      "description": "A sweet shop that has operated near Dehradun's Clock Tower since 1951.",
+      "latitude": 30.325182,
+      "longitude": 78.0430935,
+      "coordsPrecision": "exact",
+      "sourceUrl": "https://www.district.in/blog/iconic-street-food-spots-dehradun"
+    },
+    {
+      "key": "chetan-puri-wala",
+      "name": "Chetan Puri Wala",
+      "category": "restaurant",
+      "locality": "Paltan Bazaar / Clock Tower",
+      "description": "A long-running eatery near Hanuman Chowk in Paltan Bazaar that has fed locals for four decades.",
+      "latitude": 30.3185,
+      "longitude": 78.0335,
+      "coordsPrecision": "approximate",
+      "sourceUrl": "https://www.district.in/blog/iconic-street-food-spots-dehradun"
+    },
+    {
+      "key": "english-book-depot",
+      "name": "English Book Depot",
+      "category": "bookstore",
+      "locality": "Paltan Bazaar / Clock Tower",
+      "description": "A well-known independent bookstore on Rajpur Road near the Clock Tower, stocked with English literary fiction, quality non-fiction and children's books.",
+      "latitude": 30.3271541,
+      "longitude": 78.0448347,
+      "coordsPrecision": "exact",
+      "sourceUrl": "https://bookmandee.com/?p=11048"
+    },
+    {
+      "key": "elloras",
+      "name": "Elloras",
+      "category": "bakery",
+      "locality": "Rajpur Road / Jakhan",
+      "description": "A Rajpur Road bakery started in 1953, known for its stick jaws (butter toffees), plum cakes and pista biscuits, and now run by the family's third generation.",
+      "latitude": 30.3299734,
+      "longitude": 78.0470095,
+      "coordsPrecision": "approximate",
+      "sourceUrl": "https://thebetterindia.com/food/dehradun-bakery-elloras-stick-jaws-plum-cakes-iconic-spots-and-restaurants-10501012"
+    },
+    {
+      "key": "kalsang-friends-corner",
+      "name": "Kalsang Friends Corner",
+      "category": "restaurant",
+      "locality": "Rajpur Road / Jakhan",
+      "description": "A restaurant serving Indian, Chinese and Tibetan food, recommended for its momos, thukpa, garlic noodles, mutton shaptak and chicken shabalay.",
+      "latitude": 30.3469127,
+      "longitude": 78.062623,
+      "coordsPrecision": "approximate",
+      "sourceUrl": "https://sotc.in/tourism/uttarakhand-tourism/food-in-uttarakhand/kalsang-friend-corner/1142"
+    },
+    {
+      "key": "pacific-mall",
+      "name": "Pacific Mall",
+      "category": "shopping",
+      "locality": "Rajpur Road / Jakhan",
+      "description": "A mall on Rajpur Road, Jakhan, covering more than 3.5 lakh sq ft, with over 100 brands, a food court, a kids' gaming zone and a 5-screen PVR multiplex.",
+      "latitude": 30.366342,
+      "longitude": 78.0704631,
+      "coordsPrecision": "exact",
+      "sourceUrl": "https://www.jaypeehotels.com/blog/malls-in-dehradun-for-shopping-food-entertainment-and-more"
+    },
+    {
+      "key": "delhi-darbar",
+      "name": "Delhi Darbar",
+      "category": "restaurant",
+      "locality": "ISBT / Majra / Kargi Chowk",
+      "description": "A casual, family-friendly restaurant on the highway at Majra serving mainly North Indian food, used as a stop by travellers and locals.",
+      "latitude": 30.2923174,
+      "longitude": 77.9999289,
+      "coordsPrecision": "exact",
+      "sourceUrl": "https://www.explurger.com/pd/do8t9yrl2dkcxdf3e"
+    },
+    {
+      "key": "dana-pani",
+      "name": "Dana Pani Multicuisine Restaurant",
+      "category": "restaurant",
+      "locality": "ISBT / Majra / Kargi Chowk",
+      "description": "A restaurant on NH307 near ISBT serving veg and non-veg Chinese food for about Rs 500 for two, open 11:00 AM to 10:30 PM.",
+      "latitude": 30.2879421,
+      "longitude": 77.9964482,
+      "coordsPrecision": "exact",
+      "sourceUrl": "https://www.eazydiner.com/dehradun/dana-pani-multicuisine-restaurant-clement-town-dehradun-704224"
+    }
+  ]
+}

@@ -1,0 +1,2278 @@
+openapi: 3.0.1
+info:
+  title: CitySense Public API
+  description: Spring Boot core gateway. Clients never call the AI service directly.
+  version: 0.1.0
+servers:
+- url: http://localhost:8080
+  description: Generated server url
+security:
+- bearerAuth: []
+tags:
+- name: Avatars
+  description: City service avatars on the Explore map (requires a verified account)
+- name: Mobility
+  description: "Weather observations, emergency predictive routing, and green corridor\
+    \ preemption"
+- name: Agent
+  description: "Multilingual Citizen AI Assistant, RAG Knowledge Base, and specialist\
+    \ personas"
+- name: Geo
+  description: "Map tiles, geocoding and routing proxied from the OpenStreetMap stack"
+- name: Civic
+  description: "Citizen complaints, municipal grievances, and city events"
+paths:
+  /api/avatars/{id}/save:
+    put:
+      tags:
+      - Avatars
+      operationId: save
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ToggleResponse"
+    delete:
+      tags:
+      - Avatars
+      operationId: unsave
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ToggleResponse"
+  /api/avatars/{id}/like:
+    put:
+      tags:
+      - Avatars
+      operationId: like
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ToggleResponse"
+    delete:
+      tags:
+      - Avatars
+      operationId: unlike
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ToggleResponse"
+  /internal/observations:
+    post:
+      tags:
+      - Internal
+      summary: ai-service pushes observations (e.g. cv_density) here
+      operationId: ingest
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ObservationRequest"
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/IngestResponse"
+      security:
+      - internalKey: []
+  /internal/actions:
+    post:
+      tags:
+      - Internal
+      operationId: propose
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProposeRequest"
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ActionView"
+      security:
+      - internalKey: []
+  /api/scenarios/{name}:
+    post:
+      tags:
+      - Scenarios
+      summary: Inject a demo scenario; all observations are labelled SIMULATED
+      operationId: inject
+      parameters:
+      - name: name
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/IngestResponse"
+  /api/mobility/green-corridor:
+    post:
+      tags:
+      - Mobility
+      summary: Propose emergency green corridor for traffic coordinator approval queue
+      operationId: requestGreenCorridor
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GreenCorridorRequest"
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/GreenCorridorResponse"
+  /api/mobility/emergency-route:
+    post:
+      tags:
+      - Mobility
+      summary: Compute predictive emergency routing with flood depth and underpass
+        waterlogging bypass
+      operationId: planEmergencyRoute
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmergencyRouteRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/EmergencyRouteResponse"
+  /api/events:
+    get:
+      tags:
+      - Observations
+      summary: "Most recent observations, optionally filtered by type"
+      operationId: recent
+      parameters:
+      - name: type
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - cv_density
+          - complaint
+          - flood
+          - crash
+          - event
+          - agent_finding
+          - rain
+          - congestion
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 100
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ObservationView"
+    post:
+      tags:
+      - Observations
+      summary: Inject an observation (dashboard / crew)
+      operationId: inject_1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ObservationRequest"
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/IngestResponse"
+  /api/complaints:
+    get:
+      tags:
+      - Civic
+      summary: "List complaints, optionally filtered by status and/or department (CREW,\
+        \ ADMIN)"
+      description: "ADMIN: all complaints. CREW: complaints assigned to them plus\
+        \ unassigned FILED/ESCALATED complaints available for assignment; never complaints\
+        \ assigned to other crew members."
+      operationId: listComplaints
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: department
+        in: query
+        required: false
+        schema:
+          type: string
+      responses:
+        "403":
+          description: Not CREW or ADMIN
+          content:
+            application/problem+json: {}
+        "400":
+          description: Unknown status
+          content:
+            application/problem+json: {}
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ComplaintResponse"
+        "401":
+          description: Missing or invalid JWT (no body)
+    post:
+      tags:
+      - Civic
+      summary: "Submit a grievance (signed in, verified email); it is owned by the\
+        \ caller"
+      description: At most 10 complaints per user in any sliding hour (configurable);
+        the next gets 429.
+      operationId: fileComplaint
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ComplaintCreateRequest"
+        required: true
+      responses:
+        "403":
+          description: Email not verified
+          content:
+            application/problem+json: {}
+        "400":
+          description: Validation failed (RFC 9457 problem)
+          content:
+            application/problem+json: {}
+        "201":
+          description: Filed
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ComplaintResponse"
+        "429":
+          description: Filing limit reached; Retry-After gives the seconds until a
+            slot frees up
+          headers:
+            Retry-After:
+              description: Seconds to wait
+              style: simple
+              schema:
+                type: integer
+          content:
+            application/problem+json: {}
+        "401":
+          description: Missing or invalid JWT (no body)
+  /api/city-events:
+    get:
+      tags:
+      - Civic
+      summary: "List public city events, alerts, and community notices"
+      operationId: listCityEvents
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CityEventResponse"
+    post:
+      tags:
+      - Civic
+      summary: Create a city event or public bulletin notice (ADMIN)
+      operationId: createCityEvent
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CityEventCreateRequest"
+        required: true
+      responses:
+        "201":
+          description: Published
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/CityEventResponse"
+        "400":
+          description: Validation failed
+          content:
+            application/problem+json: {}
+        "403":
+          description: Not ADMIN
+          content:
+            application/problem+json: {}
+        "401":
+          description: Missing or invalid JWT (no body)
+  /api/avatars/{id}/chat:
+    post:
+      tags:
+      - Avatars
+      summary: "Chat with an avatar: quick intents (INTRO, PRICING, WEBSITE) or free\
+        \ text to its persona"
+      operationId: chat
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AvatarChatRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AvatarChatResponse"
+  /api/auth/register:
+    post:
+      tags:
+      - Auth
+      operationId: register
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+  /api/auth/password/reset:
+    post:
+      tags:
+      - Auth
+      operationId: resetPassword
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PasswordResetRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+  /api/auth/password/forgot:
+    post:
+      tags:
+      - Auth
+      operationId: forgotPassword
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OtpSendRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/OtpSentResponse"
+  /api/auth/otp/verify:
+    post:
+      tags:
+      - Auth
+      operationId: verifyOtp
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OtpVerifyRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+  /api/auth/otp/send:
+    post:
+      tags:
+      - Auth
+      operationId: sendOtp
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OtpSendRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/OtpSentResponse"
+  /api/auth/login:
+    post:
+      tags:
+      - Auth
+      operationId: login
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+  /api/agent/knowledge/docs:
+    post:
+      tags:
+      - Agent
+      summary: Register verified document into municipal knowledge base
+      operationId: registerKnowledgeDoc
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/KnowledgeDocRequest"
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/KnowledgeDocResponse"
+  /api/agent/chat:
+    post:
+      tags:
+      - Agent
+      summary: Interact with Multilingual Citizen Assistant with grounded knowledge
+        citations and abstain guardrails
+      operationId: chat_1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ChatResponse"
+  /api/actions:
+    get:
+      tags:
+      - Approvals
+      operationId: list_4
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - PENDING
+          - APPROVED
+          - REJECTED
+          - AUTO_EXECUTED
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ActionView"
+    post:
+      tags:
+      - Approvals
+      operationId: propose_1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProposeRequest"
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ActionView"
+  /api/actions/{id}/reject:
+    post:
+      tags:
+      - Approvals
+      operationId: reject
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RejectRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ActionView"
+  /api/actions/{id}/approve:
+    post:
+      tags:
+      - Approvals
+      operationId: approve
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DecisionRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ActionView"
+  /api/incidents/{id}/status:
+    patch:
+      tags:
+      - Incidents
+      operationId: changeStatus
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StatusChange"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/IncidentView"
+  /api/complaints/{id}/status:
+    patch:
+      tags:
+      - Civic
+      summary: "Change complaint status: CREW on their own assignments, ADMIN for\
+        \ the full lifecycle"
+      description: "CREW: FILED|ESCALATED->ASSIGNED (self only), ASSIGNED->IN_PROGRESS,\
+        \ IN_PROGRESS->RESOLVED, on complaints assigned to them. ADMIN: FILED->ASSIGNED|REJECTED|ESCALATED,\
+        \ ESCALATED->ASSIGNED|REJECTED, ASSIGNED->ASSIGNED|IN_PROGRESS|REJECTED|FILED,\
+        \ IN_PROGRESS->ASSIGNED|RESOLVED|REJECTED, RESOLVED|REJECTED->FILED. ASSIGNED\
+        \ needs a crew account email; REJECTED needs resolutionNotes."
+      operationId: updateStatus
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ComplaintStatusUpdateRequest"
+        required: true
+      responses:
+        "400":
+          description: "Unknown status, missing worker or reason, or worker is not\
+            \ a crew account"
+          content:
+            application/problem+json: {}
+        "403":
+          description: "Citizen, or crew acting outside their own assignment or allowed\
+            \ statuses"
+          content:
+            application/problem+json: {}
+        "200":
+          description: Changed (audited)
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ComplaintResponse"
+        "404":
+          description: "No complaint with this id, or one the caller may not see (indistinguishable)"
+          content:
+            application/problem+json: {}
+        "409":
+          description: Transition not allowed from the current status
+          content:
+            application/problem+json: {}
+        "401":
+          description: Missing or invalid JWT (no body)
+  /api/scenarios:
+    get:
+      tags:
+      - Scenarios
+      operationId: list
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  type: string
+  /api/weather/current:
+    get:
+      tags:
+      - Mobility
+      summary: Fetch live Open-Meteo weather and urban water depth estimate
+      operationId: getWeather
+      parameters:
+      - name: city
+        in: query
+        required: false
+        schema:
+          type: string
+          default: Dehradun
+      - name: latitude
+        in: query
+        required: false
+        schema:
+          type: number
+          format: double
+      - name: longitude
+        in: query
+        required: false
+        schema:
+          type: number
+          format: double
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/WeatherResponse"
+  /api/mobility/weather:
+    get:
+      tags:
+      - Mobility
+      summary: Fetch live Open-Meteo weather and urban water depth estimate
+      operationId: getWeather_1
+      parameters:
+      - name: city
+        in: query
+        required: false
+        schema:
+          type: string
+          default: Dehradun
+      - name: latitude
+        in: query
+        required: false
+        schema:
+          type: number
+          format: double
+      - name: longitude
+        in: query
+        required: false
+        schema:
+          type: number
+          format: double
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/WeatherResponse"
+  /api/mobility/junctions:
+    get:
+      tags:
+      - Mobility
+      summary: Get real-time junction telemetry and adaptive RL signal state
+      operationId: getJunctions
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/JunctionTelemetryResponse"
+  /api/map/features:
+    get:
+      tags:
+      - Map
+      summary: Active incidents and recent observations as a GeoJSON FeatureCollection
+      operationId: features
+      parameters:
+      - name: observationLimit
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 200
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
+                additionalProperties:
+                  type: object
+  /api/incidents:
+    get:
+      tags:
+      - Incidents
+      operationId: list_1
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - OPEN
+          - ACKNOWLEDGED
+          - RESOLVED
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/IncidentView"
+  /api/incidents/{id}:
+    get:
+      tags:
+      - Incidents
+      operationId: detail
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/IncidentDetail"
+  /api/geo/tiles/{z}/{x}/{y}.png:
+    get:
+      tags:
+      - Geo
+      summary: Raster map tile (cached proxy of the configured tile server)
+      operationId: tile
+      parameters:
+      - name: z
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int32
+      - name: x
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int32
+      - name: "y"
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: string
+                format: byte
+  /api/geo/style.json:
+    get:
+      tags:
+      - Geo
+      summary: MapLibre style whose raster tiles point at this proxy
+      operationId: style
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: object
+  /api/geo/route:
+    get:
+      tags:
+      - Geo
+      summary: "Route between two points (GeoJSON LineString, metres, seconds)"
+      operationId: route
+      parameters:
+      - name: fromLat
+        in: query
+        required: true
+        schema:
+          type: number
+          format: double
+      - name: fromLng
+        in: query
+        required: true
+        schema:
+          type: number
+          format: double
+      - name: toLat
+        in: query
+        required: true
+        schema:
+          type: number
+          format: double
+      - name: toLng
+        in: query
+        required: true
+        schema:
+          type: number
+          format: double
+      - name: profile
+        in: query
+        required: false
+        schema:
+          type: string
+          default: driving
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Route"
+  /api/geo/reverse:
+    get:
+      tags:
+      - Geo
+      summary: "Reverse geocoding: address for a coordinate"
+      operationId: reverse
+      parameters:
+      - name: lat
+        in: query
+        required: true
+        schema:
+          type: number
+          format: double
+      - name: lng
+        in: query
+        required: true
+        schema:
+          type: number
+          format: double
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Place"
+  /api/geo/geocode:
+    get:
+      tags:
+      - Geo
+      summary: "Forward geocoding (place search), optionally biased near a point"
+      operationId: geocode
+      parameters:
+      - name: q
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 5
+      - name: lat
+        in: query
+        required: false
+        schema:
+          type: number
+          format: double
+      - name: lng
+        in: query
+        required: false
+        schema:
+          type: number
+          format: double
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PlaceList"
+  /api/geo/config:
+    get:
+      tags:
+      - Geo
+      summary: "Map defaults for clients (style URL, default centre, geofence radius)"
+      operationId: config
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/MapConfig"
+  /api/complaints/{trackingId}:
+    get:
+      tags:
+      - Civic
+      summary: "Track a complaint by tracking ID (owner, ADMIN, CREW within their\
+        \ scope; anyone else gets 404)"
+      operationId: getComplaint
+      parameters:
+      - name: trackingId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ComplaintResponse"
+        "401":
+          description: Missing or invalid JWT (no body)
+        "404":
+          description: "Unknown ID, or a complaint the caller may not see (indistinguishable)"
+          content:
+            application/problem+json: {}
+  /api/complaints/mine:
+    get:
+      tags:
+      - Civic
+      summary: "Complaints filed by the signed-in user, newest first"
+      operationId: myComplaints
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ComplaintResponse"
+  /api/complaints/meta:
+    get:
+      tags:
+      - Civic
+      summary: Complaint priorities and the escalation ladder (level index -> label)
+      operationId: meta
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/CivicMeta"
+  /api/avatars:
+    get:
+      tags:
+      - Avatars
+      summary: Avatars near a point (lat/lng/radiusMeters) or everywhere; q searches
+        name/title/category
+      operationId: list_2
+      parameters:
+      - name: lat
+        in: query
+        required: false
+        schema:
+          type: number
+          format: double
+      - name: lng
+        in: query
+        required: false
+        schema:
+          type: number
+          format: double
+      - name: radiusMeters
+        in: query
+        required: false
+        schema:
+          type: number
+          format: double
+      - name: q
+        in: query
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AvatarView"
+  /api/avatars/{id}:
+    get:
+      tags:
+      - Avatars
+      operationId: get
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AvatarView"
+  /api/avatars/saved:
+    get:
+      tags:
+      - Avatars
+      summary: "Avatars the current user saved, newest first"
+      operationId: saved
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AvatarView"
+  /api/auth/me:
+    get:
+      tags:
+      - Auth
+      operationId: me
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/UserView"
+  /api/audit:
+    get:
+      tags:
+      - Audit
+      operationId: list_3
+      parameters:
+      - name: entityType
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: entityId
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 50
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PageAuditLog"
+  /api/agent/personas:
+    get:
+      tags:
+      - Agent
+      summary: List specialist citizen agent personas
+      operationId: listPersonas
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PersonaView"
+components:
+  schemas:
+    ToggleResponse:
+      type: object
+      properties:
+        avatarId:
+          type: string
+          format: uuid
+        active:
+          type: boolean
+        count:
+          type: integer
+          format: int64
+    ObservationRequest:
+      required:
+      - latitude
+      - longitude
+      - type
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+          - cv_density
+          - complaint
+          - flood
+          - crash
+          - event
+          - agent_finding
+          - rain
+          - congestion
+        latitude:
+          maximum: 90
+          exclusiveMaximum: false
+          minimum: -90
+          exclusiveMinimum: false
+          type: number
+          format: double
+        longitude:
+          maximum: 180
+          exclusiveMaximum: false
+          minimum: -180
+          exclusiveMinimum: false
+          type: number
+          format: double
+        observedAt:
+          type: string
+          format: date-time
+        source:
+          maxLength: 64
+          minLength: 0
+          type: string
+        confidence:
+          maximum: 1
+          exclusiveMaximum: false
+          minimum: 0
+          exclusiveMinimum: false
+          type: number
+          format: double
+        status:
+          type: string
+          enum:
+          - UNVERIFIED
+          - VERIFIED
+          - SIMULATED
+          - PREDICTED
+          - STALE
+        payload:
+          type: object
+          additionalProperties:
+            type: object
+    IngestResponse:
+      type: object
+      properties:
+        observation:
+          $ref: "#/components/schemas/ObservationView"
+        incidentId:
+          type: string
+          format: uuid
+        newIncident:
+          type: boolean
+    ObservationView:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum:
+          - cv_density
+          - complaint
+          - flood
+          - crash
+          - event
+          - agent_finding
+          - rain
+          - congestion
+        latitude:
+          type: number
+          format: double
+        longitude:
+          type: number
+          format: double
+        observedAt:
+          type: string
+          format: date-time
+        source:
+          type: string
+        confidence:
+          type: number
+          format: double
+        status:
+          type: string
+          enum:
+          - UNVERIFIED
+          - VERIFIED
+          - SIMULATED
+          - PREDICTED
+          - STALE
+        payload:
+          type: object
+          additionalProperties:
+            type: object
+        incidentId:
+          type: string
+          format: uuid
+    ProposeRequest:
+      required:
+      - actionType
+      - agent
+      type: object
+      properties:
+        incidentId:
+          type: string
+          format: uuid
+        agent:
+          maxLength: 64
+          minLength: 0
+          type: string
+        actionType:
+          type: string
+          enum:
+          - NOTIFY_CITIZENS
+          - SIGNAL_OVERRIDE
+          - ROAD_CLOSURE
+          - DISPATCH
+          - EVACUATION
+          - GREEN_CORRIDOR
+        riskLevel:
+          type: string
+          enum:
+          - LOW
+          - MEDIUM
+          - HIGH
+        summary:
+          maxLength: 2000
+          minLength: 0
+          type: string
+        payload:
+          type: object
+          additionalProperties:
+            type: object
+    ActionView:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        incidentId:
+          type: string
+          format: uuid
+        agent:
+          type: string
+        actionType:
+          type: string
+          enum:
+          - NOTIFY_CITIZENS
+          - SIGNAL_OVERRIDE
+          - ROAD_CLOSURE
+          - DISPATCH
+          - EVACUATION
+          - GREEN_CORRIDOR
+        summary:
+          type: string
+        payload:
+          type: object
+          additionalProperties:
+            type: object
+        riskLevel:
+          type: string
+          enum:
+          - LOW
+          - MEDIUM
+          - HIGH
+        approvalStatus:
+          type: string
+          enum:
+          - PENDING
+          - APPROVED
+          - REJECTED
+          - AUTO_EXECUTED
+        decidedBy:
+          type: string
+          format: uuid
+        decidedAt:
+          type: string
+          format: date-time
+        decisionReason:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    GreenCorridorRequest:
+      required:
+      - corridorName
+      type: object
+      properties:
+        corridorName:
+          type: string
+        junctionIds:
+          type: array
+          items:
+            type: string
+        durationMinutes:
+          type: integer
+          format: int32
+        reason:
+          type: string
+    GreenCorridorResponse:
+      type: object
+      properties:
+        actionId:
+          type: string
+          format: uuid
+        approvalStatus:
+          type: string
+        corridorName:
+          type: string
+        junctionIds:
+          type: array
+          items:
+            type: string
+        durationMinutes:
+          type: integer
+          format: int32
+        summary:
+          type: string
+    EmergencyRouteRequest:
+      required:
+      - destinationNode
+      - originNode
+      type: object
+      properties:
+        originNode:
+          type: string
+        destinationNode:
+          type: string
+        emergencyType:
+          type: string
+        avoidUnderpassFloods:
+          type: boolean
+        simulatedFloodDepthCm:
+          type: number
+          format: double
+    EmergencyRouteResponse:
+      type: object
+      properties:
+        missionId:
+          type: string
+        originNode:
+          type: string
+        destinationNode:
+          type: string
+        pathNodes:
+          type: array
+          items:
+            type: string
+        pathEdges:
+          type: array
+          items:
+            type: string
+        distanceKm:
+          type: number
+          format: double
+        nominalTimeMinutes:
+          type: number
+          format: double
+        effectiveTimeMinutes:
+          type: number
+          format: double
+        rerouted:
+          type: boolean
+        weatherRerouted:
+          type: boolean
+        decisionReason:
+          type: string
+    ComplaintCreateRequest:
+      required:
+      - description
+      - title
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        department:
+          type: string
+        priority:
+          type: string
+        latitude:
+          type: number
+          format: double
+        longitude:
+          type: number
+          format: double
+        citizenName:
+          type: string
+        photoUrl:
+          type: string
+    ComplaintResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        trackingId:
+          type: string
+        citizenName:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        department:
+          type: string
+        priority:
+          type: string
+        status:
+          type: string
+        latitude:
+          type: number
+          format: double
+        longitude:
+          type: number
+          format: double
+        photoUrl:
+          type: string
+        escalationLevel:
+          type: integer
+          format: int32
+        assignedWorker:
+          type: string
+        resolutionNotes:
+          type: string
+        resolvedAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    CityEventCreateRequest:
+      required:
+      - title
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        severity:
+          type: string
+        latitude:
+          type: number
+          format: double
+        longitude:
+          type: number
+          format: double
+        startsAt:
+          type: string
+          format: date-time
+        endsAt:
+          type: string
+          format: date-time
+    CityEventResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        severity:
+          type: string
+        latitude:
+          type: number
+          format: double
+        longitude:
+          type: number
+          format: double
+        startsAt:
+          type: string
+          format: date-time
+        endsAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+    AvatarChatRequest:
+      type: object
+      properties:
+        message:
+          maxLength: 2000
+          minLength: 0
+          type: string
+        intent:
+          type: string
+          enum:
+          - INTRO
+          - PRICING
+          - WEBSITE
+        language:
+          pattern: "^[a-z]{2}$"
+          type: string
+        sessionId:
+          maxLength: 64
+          minLength: 0
+          type: string
+    AvatarChatResponse:
+      type: object
+      properties:
+        sessionId:
+          type: string
+        reply:
+          type: string
+        intent:
+          type: string
+          enum:
+          - INTRO
+          - PRICING
+          - WEBSITE
+        link:
+          type: string
+        sources:
+          type: array
+          items:
+            type: string
+        timestamp:
+          type: string
+          format: date-time
+    RegisterRequest:
+      required:
+      - email
+      - fullName
+      - password
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          maxLength: 72
+          minLength: 8
+          type: string
+        fullName:
+          maxLength: 120
+          minLength: 0
+          type: string
+        language:
+          pattern: "^[a-z]{2}(-[A-Z]{2})?$"
+          type: string
+    TokenResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        tokenType:
+          type: string
+        expiresIn:
+          type: integer
+          format: int64
+        user:
+          $ref: "#/components/schemas/UserView"
+    UserView:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        fullName:
+          type: string
+        role:
+          type: string
+          enum:
+          - CITIZEN
+          - ADMIN
+          - CREW
+        language:
+          type: string
+        emailVerified:
+          type: boolean
+    PasswordResetRequest:
+      required:
+      - code
+      - email
+      - newPassword
+      type: object
+      properties:
+        email:
+          type: string
+        code:
+          pattern: "^[0-9]{4,8}$"
+          type: string
+        newPassword:
+          maxLength: 72
+          minLength: 8
+          type: string
+    OtpSendRequest:
+      required:
+      - email
+      type: object
+      properties:
+        email:
+          type: string
+    OtpSentResponse:
+      type: object
+      properties:
+        email:
+          type: string
+        codeLength:
+          type: integer
+          format: int32
+        expiresInSeconds:
+          type: integer
+          format: int64
+        resendAfterSeconds:
+          type: integer
+          format: int64
+    OtpVerifyRequest:
+      required:
+      - code
+      - email
+      type: object
+      properties:
+        email:
+          type: string
+        code:
+          pattern: "^[0-9]{4,8}$"
+          type: string
+    LoginRequest:
+      required:
+      - email
+      - password
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+    KnowledgeDocRequest:
+      required:
+      - category
+      - title
+      type: object
+      properties:
+        title:
+          type: string
+        category:
+          type: string
+        department:
+          type: string
+        content:
+          type: string
+        sourceUrl:
+          type: string
+    KnowledgeDocResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        category:
+          type: string
+        department:
+          type: string
+        isVerified:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+    ChatRequest:
+      required:
+      - message
+      type: object
+      properties:
+        message:
+          type: string
+        persona:
+          type: string
+        language:
+          type: string
+        sessionId:
+          type: string
+    ChatResponse:
+      type: object
+      properties:
+        sessionId:
+          type: string
+        reply:
+          type: string
+        persona:
+          type: string
+        language:
+          type: string
+        sources:
+          type: array
+          items:
+            type: string
+        abstained:
+          type: boolean
+        timestamp:
+          type: string
+          format: date-time
+    RejectRequest:
+      required:
+      - reason
+      type: object
+      properties:
+        reason:
+          maxLength: 2000
+          minLength: 0
+          type: string
+    DecisionRequest:
+      type: object
+      properties:
+        reason:
+          maxLength: 2000
+          minLength: 0
+          type: string
+    StatusChange:
+      required:
+      - status
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+          - OPEN
+          - ACKNOWLEDGED
+          - RESOLVED
+    IncidentView:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum:
+          - cv_density
+          - complaint
+          - flood
+          - crash
+          - event
+          - agent_finding
+          - rain
+          - congestion
+        title:
+          type: string
+        summary:
+          type: string
+        severity:
+          type: integer
+          format: int32
+        urgencyScore:
+          type: number
+          format: double
+        latitude:
+          type: number
+          format: double
+        longitude:
+          type: number
+          format: double
+        status:
+          type: string
+          enum:
+          - OPEN
+          - ACKNOWLEDGED
+          - RESOLVED
+        observationCount:
+          type: integer
+          format: int32
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    ComplaintStatusUpdateRequest:
+      required:
+      - status
+      type: object
+      properties:
+        status:
+          type: string
+        assignedWorker:
+          type: string
+        resolutionNotes:
+          type: string
+    WeatherResponse:
+      type: object
+      properties:
+        city:
+          type: string
+        latitude:
+          type: number
+          format: double
+        longitude:
+          type: number
+          format: double
+        temperatureC:
+          type: number
+          format: double
+        relativeHumidity:
+          type: number
+          format: double
+        precipitationMm:
+          type: number
+          format: double
+        rainMm:
+          type: number
+          format: double
+        floodDepthCm:
+          type: number
+          format: double
+        riskLevel:
+          type: string
+        conditionText:
+          type: string
+        source:
+          type: string
+        observedAt:
+          type: string
+          format: date-time
+    JunctionTelemetryResponse:
+      type: object
+      properties:
+        junctionId:
+          type: string
+        name:
+          type: string
+        latitude:
+          type: number
+          format: double
+        longitude:
+          type: number
+          format: double
+        currentMode:
+          type: string
+        greenCorridorActive:
+          type: boolean
+        congestionLevel:
+          type: number
+          format: double
+    IncidentDetail:
+      type: object
+      properties:
+        incident:
+          $ref: "#/components/schemas/IncidentView"
+        observations:
+          type: array
+          items:
+            $ref: "#/components/schemas/ObservationView"
+        actions:
+          type: array
+          items:
+            $ref: "#/components/schemas/ActionView"
+    Route:
+      type: object
+      properties:
+        distanceMeters:
+          type: number
+          format: double
+        durationSeconds:
+          type: number
+          format: double
+        geometry:
+          type: object
+          additionalProperties:
+            type: object
+    Place:
+      type: object
+      properties:
+        name:
+          type: string
+        displayName:
+          type: string
+        latitude:
+          type: number
+          format: double
+        longitude:
+          type: number
+          format: double
+        type:
+          type: string
+    PlaceList:
+      type: object
+      properties:
+        places:
+          type: array
+          items:
+            $ref: "#/components/schemas/Place"
+    MapConfig:
+      type: object
+      properties:
+        styleUrl:
+          type: string
+        defaultLatitude:
+          type: number
+          format: double
+        defaultLongitude:
+          type: number
+          format: double
+        defaultZoom:
+          type: number
+          format: double
+        minZoom:
+          type: integer
+          format: int32
+        maxZoom:
+          type: integer
+          format: int32
+        geofenceRadiusMeters:
+          type: number
+          format: double
+        attribution:
+          type: string
+    CivicMeta:
+      type: object
+      properties:
+        priorities:
+          type: array
+          items:
+            type: string
+        escalationLadder:
+          type: array
+          items:
+            type: string
+    AvatarView:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        handle:
+          type: string
+        name:
+          type: string
+        title:
+          type: string
+        category:
+          type: string
+        persona:
+          type: string
+        intro:
+          type: string
+        pricing:
+          type: string
+        websiteUrl:
+          type: string
+        socials:
+          $ref: "#/components/schemas/Socials"
+        pinImageUrl:
+          type: string
+        heroImageUrl:
+          type: string
+        rating:
+          type: number
+        reviewCount:
+          type: integer
+          format: int32
+        likeCount:
+          type: integer
+          format: int64
+        latitude:
+          type: number
+          format: double
+        longitude:
+          type: number
+          format: double
+        distanceMeters:
+          type: number
+          format: double
+        saved:
+          type: boolean
+        liked:
+          type: boolean
+    Socials:
+      type: object
+      properties:
+        instagram:
+          type: string
+        threads:
+          type: string
+        x:
+          type: string
+    AuditLog:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        actor:
+          type: string
+        action:
+          type: string
+        entityType:
+          type: string
+        entityId:
+          type: string
+        outcome:
+          type: string
+        evidence:
+          type: object
+          additionalProperties:
+            type: object
+        createdAt:
+          type: string
+          format: date-time
+    PageAuditLog:
+      type: object
+      properties:
+        totalPages:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        pageable:
+          $ref: "#/components/schemas/PageableObject"
+        first:
+          type: boolean
+        last:
+          type: boolean
+        numberOfElements:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/AuditLog"
+        number:
+          type: integer
+          format: int32
+        sort:
+          type: array
+          items:
+            $ref: "#/components/schemas/SortObject"
+        empty:
+          type: boolean
+    PageableObject:
+      type: object
+      properties:
+        paged:
+          type: boolean
+        pageNumber:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        unpaged:
+          type: boolean
+        offset:
+          type: integer
+          format: int64
+        sort:
+          type: array
+          items:
+            $ref: "#/components/schemas/SortObject"
+    SortObject:
+      type: object
+      properties:
+        direction:
+          type: string
+        nullHandling:
+          type: string
+        ascending:
+          type: boolean
+        property:
+          type: string
+        ignoreCase:
+          type: boolean
+    PersonaView:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+        description:
+          type: string
+        supportedLanguages:
+          type: array
+          items:
+            type: string
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    internalKey:
+      type: apiKey
+      name: X-Internal-Key
+      in: header

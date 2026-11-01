@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>CitySense Offline Mesh Messenger</title>
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --card-bg: #151d30;
+      --border: #232f48;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+      --sos: #ef4444;
+      --sos-bg: rgba(239, 68, 68, 0.15);
+      --sos-border: #dc2626;
+      --crew: #3b82f6;
+      --citizen: #10b981;
+      --police: #8b5cf6;
+      --field: #f59e0b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      height: 100dvh;
+      overflow: hidden;
+    }
+
+    /* Header */
+    header {
+      background: #111827;
+      border-bottom: 1px solid var(--border);
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-icon {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, #2563eb, #10b981);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 18px;
+    }
+
+    .brand h1 {
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+
+    .status-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      padding: 4px 8px;
+      border-radius: 20px;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #10b981;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.85); }
+    }
+
+    /* Device Identity Ribbon */
+    .identity-bar {
+      background: #162032;
+      border-bottom: 1px solid var(--border);
+      padding: 8px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      font-size: 12px;
+    }
+
+    .identity-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+    }
+
+    .device-name-input {
+      background: #0f172a;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 5px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      width: 140px;
+    }
+
+    select.role-select {
+      background: #0f172a;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 5px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .telemetry-summary {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--text-muted);
+      font-size: 11px;
+    }
+
+    /* Tab switcher */
+    .nav-tabs {
+      display: flex;
+      background: #111827;
+      border-bottom: 1px solid var(--border);
+      padding: 4px 12px 0;
+      gap: 6px;
+    }
+
+    .nav-tab {
+      padding: 8px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      border: none;
+      background: none;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+    }
+
+    .nav-tab.active {
+      color: #60a5fa;
+      border-bottom: 2px solid #3b82f6;
+    }
+
+    /* Main Container */
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .message-stream {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* Message Bubble Cards */
+    .msg-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 14px;
+      max-width: 88%;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+      animation: fadeIn 0.2s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .msg-card.own {
+      align-self: flex-end;
+      background: #1e293b;
+      border-color: #334155;
+    }
+
+    .msg-card.peer {
+      align-self: flex-start;
+    }
+
+    .msg-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+      gap: 8px;
+    }
+
+    .msg-sender {
+      font-size: 12px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .role-pill {
+      font-size: 9px;
+      text-transform: uppercase;
+      padding: 2px 6px;
+      border-radius: 10px;
+      font-weight: 700;
+    }
+
+    .role-citizen { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+    .role-ambulance { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+    .role-police { background: rgba(139, 92, 246, 0.2); color: #c084fc; }
+    .role-crew { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+    .role-hq { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+
+    .msg-meta {
+      font-size: 10px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .msg-body {
+      font-size: 14px;
+      line-height: 1.45;
+      word-break: break-word;
+    }
+
+    .msg-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 8px;
+      padding-top: 6px;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    /* SOS Red Alert Card */
+    .msg-card.sos-alert {
+      background: #201115;
+      border: 1.5px solid var(--sos-border);
+      box-shadow: 0 0 16px rgba(239, 68, 68, 0.25);
+      align-self: center;
+      width: 100%;
+      max-width: 100%;
+    }
+
+    .sos-title {
+      color: #f87171;
+      font-weight: 800;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .sos-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin: 8px 0;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 8px;
+      border-radius: 6px;
+      font-size: 11px;
+    }
+
+    .sos-field span {
+      color: var(--text-muted);
+      display: block;
+      font-size: 10px;
+    }
+
+    .sos-field strong {
+      color: #f1f5f9;
+      font-size: 12px;
+    }
+
+    /* Field Hazard Card */
+    .msg-card.field-report {
+      background: #1c170a;
+      border: 1.5px solid var(--field);
+      align-self: center;
+      width: 100%;
+      max-width: 100%;
+    }
+
+    .field-title {
+      color: #fbbf24;
+      font-weight: 800;
+      font-size: 13px;
+    }
+
+    /* Compose Area */
+    .composer {
+      background: #111827;
+      border-top: 1px solid var(--border);
+      padding: 10px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .action-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .text-input {
+      flex: 1;
+      background: #1e293b;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 14px;
+      border-radius: 24px;
+      font-size: 14px;
+      outline: none;
+    }
+
+    .text-input:focus {
+      border-color: #3b82f6;
+    }
+
+    .btn {
+      border: none;
+      padding: 9px 16px;
+      border-radius: 20px;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: background 0.15s;
+    }
+
+    .btn-send {
+      background: #2563eb;
+      color: #ffffff;
+      border-radius: 24px;
+      padding: 10px 18px;
+    }
+
+    .btn-send:hover {
+      background: #1d4ed8;
+    }
+
+    .btn-sos {
+      background: #dc2626;
+      color: #ffffff;
+      animation: pulse 2.5s infinite;
+    }
+
+    .btn-sos:hover {
+      background: #b91c1c;
+    }
+
+    .btn-report {
+      background: #d97706;
+      color: #ffffff;
+    }
+
+    /* SOS Modal Dialog */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 100;
+      visibility: hidden;
+      opacity: 0;
+      transition: all 0.2s;
+    }
+
+    .modal-overlay.active {
+      visibility: visible;
+      opacity: 1;
+    }
+
+    .modal-box {
+      background: #111827;
+      border: 1px solid #dc2626;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 420px;
+      padding: 20px;
+      box-shadow: 0 10px 25px rgba(220, 38, 38, 0.3);
+    }
+
+    .modal-box h2 {
+      color: #f87171;
+      font-size: 18px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .form-group {
+      margin-bottom: 12px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .form-control {
+      width: 100%;
+      background: #1e293b;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-size: 13px;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .modal-actions button {
+      flex: 1;
+    }
+
+    .btn-cancel {
+      background: #334155;
+      color: var(--text);
+    }
+
+    /* Peers Drawer */
+    .peers-panel {
+      background: #111827;
+      border-bottom: 1px solid var(--border);
+      padding: 8px 16px;
+      display: none;
+      font-size: 11px;
+    }
+
+    .peers-panel.active {
+      display: block;
+    }
+
+    .peers-list {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-top: 4px;
+    }
+
+    .peer-chip {
+      background: #1e293b;
+      border: 1px solid var(--border);
+      padding: 4px 10px;
+      border-radius: 12px;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .peer-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #10b981;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Header -->
+  <header>
+    <div class="brand">
+      <div class="brand-icon">⚡</div>
+      <div>
+        <h1>CitySense Mesh</h1>
+        <div style="font-size: 10px; color: #94a3b8;">Zero-Internet Knit Engine</div>
+      </div>
+    </div>
+    <div class="status-badge">
+      <div class="status-dot"></div>
+      <span id="connLabel">OFFLINE P2P MESH</span>
+    </div>
+  </header>
+
+  <!-- Knit Native APK Download Banner for Direct Wi-Fi Aware / BLE mesh -->
+  <div style="background: linear-gradient(90deg, #1e3a8a, #065f46); padding: 8px 16px; font-size: 11px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); flex-wrap: wrap; gap: 6px;">
+    <div>
+      <strong>Radio Mesh (Wi-Fi Aware & Bluetooth LE):</strong> For true phone-to-phone radio mesh with <em>zero router and zero hotspot</em>, use the Knit Android app on both phones:
+    </div>
+    <a href="/knit.apk" download style="background: #10b981; color: #fff; text-decoration: none; padding: 5px 12px; border-radius: 6px; font-weight: 700; font-size: 11px; white-space: nowrap;">
+      📥 Download Knit APK (123 MB)
+    </a>
+  </div>
+
+  <!-- Device Identity Bar -->
+  <div class="identity-bar">
+    <div class="identity-controls">
+      <input type="text" id="deviceNameInput" class="device-name-input" value="Phone 1">
+      <select id="roleSelect" class="role-select">
+        <option value="CITIZEN">Citizen</option>
+        <option value="AMBULANCE">Ambulance Crew</option>
+        <option value="POLICE">Police Unit</option>
+        <option value="CREW">Field Worker</option>
+        <option value="HQ">Command HQ</option>
+      </select>
+    </div>
+    <div class="telemetry-summary">
+      <span>Peers: <strong id="peerCount">1</strong></span>
+      <span>Digest: <strong id="digestLabel">0000...</strong></span>
+    </div>
+  </div>
+
+  <!-- Discovered Peers Bar -->
+  <div id="peersPanel" class="peers-panel active">
+    <div style="color: #94a3b8; margin-bottom: 4px; font-weight: 600;">ACTIVE NEARBY MESH NODES (LOCAL WI-FI / HOTSPOT):</div>
+    <div id="peersList" class="peers-list">
+      <div class="peer-chip">
+        <div class="peer-dot"></div>
+        <span>This Device</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Nav Tabs -->
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="switchFilter('ALL')">All Packets</button>
+    <button class="nav-tab" onclick="switchFilter('CHAT')">Chats</button>
+    <button class="nav-tab" onclick="switchFilter('SOS')">🚨 SOS Beacons</button>
+    <button class="nav-tab" onclick="switchFilter('REPORT')">Hazards</button>
+  </div>
+
+  <!-- Message Stream -->
+  <main>
+    <div id="messageStream" class="message-stream">
+      <!-- Welcome Card -->
+      <div class="msg-card peer" style="align-self: center; width: 100%; border-color: #3b82f6;">
+        <div class="msg-header">
+          <span class="msg-sender" style="color: #60a5fa;">📡 Knit Offline Mesh Active</span>
+          <span class="msg-meta">Local UDP / Zero Internet</span>
+        </div>
+        <div class="msg-body" style="font-size: 13px;">
+          Both phones are communicating over local wireless packets. No internet connection or cellular tower needed.
+          Try sending a message or triggering an SOS alert below!
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Composer -->
+  <div class="composer">
+    <div class="action-row">
+      <button class="btn btn-sos" onclick="openSosModal()">🚨 SOS</button>
+      <button class="btn btn-report" onclick="openReportModal()">⚠️ Hazard</button>
+      <input type="text" id="chatInput" class="text-input" placeholder="Type offline mesh message..." onkeydown="if(event.key==='Enter') sendChat()">
+      <button class="btn btn-send" onclick="sendChat()">Send</button>
+    </div>
+  </div>
+
+  <!-- SOS Modal -->
+  <div id="sosModal" class="modal-overlay">
+    <div class="modal-box">
+      <h2>🚨 Trigger Offline SOS Distress</h2>
+      <div class="form-group">
+        <label>Victim / Unit Name</label>
+        <input type="text" id="sosVictim" class="form-control" value="Citizen in Distress">
+      </div>
+      <div class="form-group">
+        <label>Emergency Type</label>
+        <select id="sosType" class="form-control">
+          <option value="MEDICAL">Medical Emergency / Trauma</option>
+          <option value="FLOOD">Flash Flood / Water Logging</option>
+          <option value="CRASH">Vehicle Crash / Collision</option>
+          <option value="FIRE">Fire / Gas Hazard</option>
+          <option value="TRAPPED">Trapped Citizen</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Urgency Level (1 to 5)</label>
+        <select id="sosUrgency" class="form-control">
+          <option value="5" selected>5 - Critical (Life Threatening)</option>
+          <option value="4">4 - High Urgency</option>
+          <option value="3">3 - Moderate</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Medical / Rescue Needs</label>
+        <input type="text" id="sosMedical" class="form-control" value="Immediate Evacuation / Paramedic">
+      </div>
+      <div class="form-group">
+        <label>Details / Landmark</label>
+        <input type="text" id="sosDetails" class="form-control" placeholder="e.g. Near Clock Tower, water 1m deep">
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-cancel" onclick="closeSosModal()">Cancel</button>
+        <button class="btn btn-sos" onclick="submitSos()">Broadcast SOS</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Field Report Modal -->
+  <div id="reportModal" class="modal-overlay">
+    <div class="modal-box" style="border-color: var(--field);">
+      <h2 style="color: #fbbf24;">⚠️ Submit Field Hazard Report</h2>
+      <div class="form-group">
+        <label>Hazard Category</label>
+        <select id="repType" class="form-control">
+          <option value="ROAD_BLOCK">Road Blockage / Fallen Tree</option>
+          <option value="FLOOD">Flooded Underpass / Water Logging</option>
+          <option value="CRASH">Vehicle Collision</option>
+          <option value="CONGESTION">Gridlock / Stampede</option>
+          <option value="RAIN">Heavy Rainfall Inundation</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Severity (1 to 5)</label>
+        <select id="repSeverity" class="form-control">
+          <option value="4" selected>4 - Severe</option>
+          <option value="3">3 - Moderate</option>
+          <option value="5">5 - Critical</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Observation Description</label>
+        <input type="text" id="repDesc" class="form-control" placeholder="e.g. Tree collapsed across both lanes on Rajpur Rd">
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-cancel" onclick="closeReportModal()">Cancel</button>
+        <button class="btn btn-report" onclick="submitReport()">Submit Report</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Configuration & State
+    const BASE_URL = window.location.origin;
+    let localNodeId = localStorage.getItem("mesh_node_id") || "node-" + Math.random().toString(36).substring(2, 7);
+    localStorage.setItem("mesh_node_id", localNodeId);
+
+    const deviceNameInput = document.getElementById("deviceNameInput");
+    const roleSelect = document.getElementById("roleSelect");
+    const messageStream = document.getElementById("messageStream");
+    const peerCount = document.getElementById("peerCount");
+    const digestLabel = document.getElementById("digestLabel");
+    const peersList = document.getElementById("peersList");
+
+    let savedName = localStorage.getItem("mesh_device_name");
+    if (savedName) deviceNameInput.value = savedName;
+    let savedRole = localStorage.getItem("mesh_device_role");
+    if (savedRole) roleSelect.value = savedRole;
+
+    deviceNameInput.addEventListener("change", () => {
+      localStorage.setItem("mesh_device_name", deviceNameInput.value);
+    });
+    roleSelect.addEventListener("change", () => {
+      localStorage.setItem("mesh_device_role", roleSelect.value);
+    });
+
+    let currentFilter = "ALL";
+    let displayedMessageIds = new Set();
+    let audioCtx = null;
+
+    function playBeep(freq = 440, type = "sine", duration = 0.15) {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) {}
+    }
+
+    function switchFilter(filter) {
+      currentFilter = filter;
+      document.querySelectorAll(".nav-tab").forEach(tab => tab.classList.remove("active"));
+      event.target.classList.add("active");
+      renderAllMessages();
+    }
+
+    let allMessages = [];
+
+    // Polling Loop (Every 1 second)
+    async function fetchMessages() {
+      try {
+        const res = await fetch(`${BASE_URL}/api/mesh/messages`);
+        if (!res.ok) return;
+        const data = await res.json();
+        
+        let hasNew = false;
+        data.forEach(msg => {
+          if (!displayedMessageIds.has(msg.id)) {
+            displayedMessageIds.add(msg.id);
+            allMessages.unshift(msg);
+            hasNew = true;
+            if (msg.type === "sos") {
+              playBeep(880, "sawtooth", 0.4);
+            } else {
+              playBeep(520, "sine", 0.1);
+            }
+          }
+        });
+
+        if (hasNew) {
+          renderAllMessages();
+        }
+      } catch (err) {}
+    }
+
+    async function fetchPeersAndDigest() {
+      try {
+        // Send heartbeat for presence
+        fetch(`${BASE_URL}/api/mesh/heartbeat`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            nodeId: localNodeId,
+            displayName: deviceNameInput.value,
+            role: roleSelect.value
+          })
+        }).catch(() => {});
+
+        const [peersRes, digestRes] = await Promise.all([
+          fetch(`${BASE_URL}/api/mesh/peers`),
+          fetch(`${BASE_URL}/api/mesh/digest`)
+        ]);
+
+        if (peersRes.ok) {
+          const peers = await peersRes.json();
+          peerCount.innerText = peers.length || 1;
+          renderPeers(peers);
+        }
+        if (digestRes.ok) {
+          const d = await digestRes.json();
+          digestLabel.innerText = (d.digest || "0000").substring(0, 8) + "...";
+        }
+      } catch (err) {}
+    }
+
+    function renderPeers(peers) {
+      peersList.innerHTML = `
+        <div class="peer-chip">
+          <div class="peer-dot"></div>
+          <span><strong>${deviceNameInput.value}</strong> (You)</span>
+        </div>
+      `;
+      peers.forEach(p => {
+        if (p.nodeId !== localNodeId) {
+          const chip = document.createElement("div");
+          chip.className = "peer-chip";
+          chip.innerHTML = `
+            <div class="peer-dot"></div>
+            <span>${p.displayName || p.nodeId} (${p.role || "NODE"})</span>
+          `;
+          peersList.appendChild(chip);
+        }
+      });
+    }
+
+    function renderAllMessages() {
+      messageStream.innerHTML = "";
+      allMessages.forEach(msg => {
+        if (currentFilter === "CHAT" && msg.type !== "chat") return;
+        if (currentFilter === "SOS" && msg.type !== "sos") return;
+        if (currentFilter === "REPORT" && msg.type !== "field_report") return;
+
+        let payload = {};
+        try { payload = typeof msg.payloadJson === "string" ? JSON.parse(msg.payloadJson) : msg.payloadJson; } catch(e) {}
+
+        const isOwn = msg.senderId === localNodeId;
+        const card = document.createElement("div");
+
+        if (msg.type === "sos") {
+          card.className = "msg-card sos-alert";
+          card.innerHTML = `
+            <div class="msg-header">
+              <span class="sos-title">🚨 CRITICAL EMERGENCY SOS</span>
+              <span class="msg-meta" style="color: #f87171;">TTL: ${msg.ttl} | Hops: ${msg.hops}</span>
+            </div>
+            <div class="sos-grid">
+              <div class="sos-field"><span>VICTIM</span><strong>${payload.victimName || "Unknown"}</strong></div>
+              <div class="sos-field"><span>TYPE</span><strong>${payload.emergencyType || "EMERGENCY"}</strong></div>
+              <div class="sos-field"><span>URGENCY</span><strong>${payload.urgencyScore || 5}/5</strong></div>
+              <div class="sos-field"><span>COORDINATES</span><strong>${payload.latitude?.toFixed(4)}, ${payload.longitude?.toFixed(4)}</strong></div>
+            </div>
+            <div class="msg-body" style="font-weight: 600; color: #fecaca;">
+              Needs: ${payload.medicalNeeds || "Immediate Help"}<br>
+              ${payload.details ? `<span style="font-size:12px; font-weight:normal; color:#e2e8f0;">${payload.details}</span>` : ""}
+            </div>
+            <div class="msg-footer">
+              <span>Node: ${msg.senderId}</span>
+              <span>✓ Knit HMAC Verified</span>
+            </div>
+          `;
+        } else if (msg.type === "field_report") {
+          card.className = "msg-card field-report";
+          card.innerHTML = `
+            <div class="msg-header">
+              <span class="field-title">⚠️ CIVIC HAZARD: ${payload.reportType || "HAZARD"}</span>
+              <span class="msg-meta" style="color: #fcd34d;">Severity ${payload.severity || 3}/5</span>
+            </div>
+            <div class="msg-body">
+              ${payload.description || "Field hazard observed."}
+            </div>
+            <div class="msg-footer">
+              <span>By: ${payload.reporterRole || "CITIZEN"} (${msg.senderId})</span>
+              <span>Hops: ${msg.hops} | TTL: ${msg.ttl}</span>
+            </div>
+          `;
+        } else {
+          card.className = `msg-card ${isOwn ? "own" : "peer"}`;
+          card.innerHTML = `
+            <div class="msg-header">
+              <span class="msg-sender">
+                ${payload.senderName || msg.senderId}
+                <span class="role-pill role-${(msg.senderRole || "citizen").toLowerCase()}">${msg.senderRole || "PEER"}</span>
+              </span>
+              <span class="msg-meta">Hops: ${msg.hops}</span>
+            </div>
+            <div class="msg-body">${payload.body || ""}</div>
+            <div class="msg-footer">
+              <span>${new Date(msg.sentAt).toLocaleTimeString()}</span>
+              <span>✓ Sig OK</span>
+            </div>
+          `;
+        }
+        messageStream.appendChild(card);
+      });
+      messageStream.scrollTop = messageStream.scrollHeight;
+    }
+
+    // Actions
+    async function sendChat() {
+      const input = document.getElementById("chatInput");
+      const text = input.value.trim();
+      if (!text) return;
+      input.value = "";
+
+      const body = {
+        body: text,
+        senderName: deviceNameInput.value,
+        channel: "NEARBY_PUBLIC",
+        urgency: "NORMAL",
+        nodeId: localNodeId,
+        role: roleSelect.value
+      };
+
+      try {
+        await fetch(`${BASE_URL}/api/mesh/broadcast`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body)
+        });
+        fetchMessages();
+      } catch (e) {
+        alert("Failed to send packet: " + e.message);
+      }
+    }
+
+    function openSosModal() { document.getElementById("sosModal").classList.add("active"); }
+    function closeSosModal() { document.getElementById("sosModal").classList.remove("active"); }
+
+    async function submitSos() {
+      const victim = document.getElementById("sosVictim").value;
+      const type = document.getElementById("sosType").value;
+      const urgency = parseInt(document.getElementById("sosUrgency").value);
+      const medical = document.getElementById("sosMedical").value;
+      const details = document.getElementById("sosDetails").value;
+
+      closeSosModal();
+
+      const body = {
+        victimName: victim,
+        emergencyType: type,
+        latitude: 30.3165 + (Math.random() - 0.5) * 0.01,
+        longitude: 78.0322 + (Math.random() - 0.5) * 0.01,
+        urgencyScore: urgency,
+        injuriesCount: 1,
+        medicalNeeds: medical,
+        details: details,
+        nodeId: localNodeId
+      };
+
+      try {
+        await fetch(`${BASE_URL}/api/mesh/sos`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body)
+        });
+        fetchMessages();
+      } catch (e) {
+        alert("SOS broadcast error: " + e.message);
+      }
+    }
+
+    function openReportModal() { document.getElementById("reportModal").classList.add("active"); }
+    function closeReportModal() { document.getElementById("reportModal").classList.remove("active"); }
+
+    async function submitReport() {
+      const type = document.getElementById("repType").value;
+      const severity = parseInt(document.getElementById("repSeverity").value);
+      const desc = document.getElementById("repDesc").value;
+
+      closeReportModal();
+
+      const body = {
+        reportType: type,
+        latitude: 30.3165,
+        longitude: 78.0322,
+        severity: severity,
+        description: desc,
+        reporterRole: roleSelect.value,
+        nodeId: localNodeId
+      };
+
+      try {
+        await fetch(`${BASE_URL}/api/mesh/field-report`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body)
+        });
+        fetchMessages();
+      } catch (e) {
+        alert("Report error: " + e.message);
+      }
+    }
+
+    // Initial Start
+    fetchMessages();
+    fetchPeersAndDigest();
+    setInterval(fetchMessages, 1000);
+    setInterval(fetchPeersAndDigest, 2500);
+  </script>
+</body>
+</html>

@@ -1,0 +1,65 @@
+# CitySense population simulator: LangGraph agents (local Gemma via llama-server) for people clusters.
+# Agents only choose categorical plans; every number (vehicles, departure times) is computed below.
+twin_url: "http://127.0.0.1:8003"
+llm_base_url: "http://127.0.0.1:8090/v1"
+llm_model: "gemma-4-E2B"
+llm_timeout_sec: 20
+llm_temperature: 0.7
+llm_max_tokens: 220
+max_concurrent_llm: 4            # match llama-server --parallel
+poll_interval_sec: 1.0
+planning_interval_sim_sec: 180   # each cluster re-plans every 3 simulated minutes
+clock_start: "07:30"             # episode t=0 shown as this time of day
+memory_size: 4                   # past plans + outcomes fed back into the prompt
+trace_log_size: 300
+car_cluster_size: 12             # max vehicles per car cluster (platoon)
+seed: 7
+# Walking paths (neighbourhood -> corridor entry) from the public OSRM foot router, cached on disk.
+# Leave walk_router_url empty to draw straight lines instead.
+walk_router_url: "https://routing.openstreetmap.de/routed-foot/route/v1/foot"
+walk_cache_path: "data/walk_paths.json"
+
+# Fraction of a cluster's population that travels in one planning round (3 sim-min). Calibrated so all
+# agents at 'high' add ~0.5 veh/s, about half the arterial's signalised capacity: congested, not gridlocked.
+# Root-cause reasoning over the twin's deterministic diagnosis (POST /api/city/root-cause).
+# gpt-oss-120b is a reasoning model with strict JSON-schema output on Groq; key from GROQ_API_KEY or SmartCity/.env.
+root_cause:
+  base_url: "https://api.groq.com/openai/v1"
+  model: "openai/gpt-oss-120b"
+  fallback_model: "openai/gpt-oss-20b"
+  reasoning_effort: "medium"
+  temperature: 0.2
+  max_tokens: 4096
+  timeout_sec: 60
+
+share_fraction: {low: 0.01, medium: 0.025, high: 0.04}
+car_ratio: {commute: 0.5, errand: 0.35, leisure: 0.4, stay_home: 0.0}
+departure_window_sec:
+  now: [0, 60]
+  delay_short: [120, 240]
+  delay_long: [300, 600]
+
+# Randomised population over the locality around the twin's real streets (app/population.py).
+population:
+  generate: true
+  seed: 11
+  clusters: 28
+  total_population: 24000
+  size_sigma: 0.9            # lognormal: a few large neighbourhoods, many small ones
+  min_population: 40
+  spread_m: 420
+  min_road_distance_m: 45
+  min_spacing_m: 110
+  names: [Dalanwala, Karanpur, Hathibarkala, Rajpur Village, Jakhan, Dilaram Bazaar, Salawala, Kishanpur,
+          Chukkuwala, Ajabpur, Survey Chowk, Aradhghar, Nehru Colony, Raipur, Vijay Colony, Malsi,
+          Sahastradhara Road, Ballupur, Indira Nagar, Vasant Vihar, Nashville Road, Old Survey Road,
+          Mussoorie Diversion, Kanwali, Bindal, Khurbura, Govind Nagar, Tilak Road, Lakhibagh, Tyagi Road]
+  personas:
+    - {text: "salaried office workers who must reach downtown offices by 9:30", weight: 3}
+    - {text: "university and school students with flexible class times who avoid traffic", weight: 2}
+    - {text: "shopkeepers opening stores and moving delivery goods to the market", weight: 2}
+    - {text: "hospital and essential-service staff on a shift change who cannot delay", weight: 1}
+    - {text: "families running errands and shopping, flexible about timing", weight: 2}
+    - {text: "parents doing the school run before 8:00", weight: 2}
+    - {text: "retirees and tourists going out for leisure, highly flexible", weight: 1}
+    - {text: "taxi and auto-rickshaw drivers working the corridor all morning", weight: 1}

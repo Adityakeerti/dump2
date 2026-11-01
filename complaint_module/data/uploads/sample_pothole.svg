@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400" viewBox="0 0 600 400">
+  <rect width="600" height="400" fill="#334155"/>
+  <path d="M 0 200 L 600 200" stroke="#f1f5f9" stroke-width="4" stroke-dasharray="20,15"/>
+  <ellipse cx="300" cy="220" rx="140" ry="60" fill="#0f172a" stroke="#475569" stroke-width="6"/>
+  <ellipse cx="280" cy="230" rx="90" ry="35" fill="#020617"/>
+  <text x="300" y="80" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#f8fafc" text-anchor="middle">Rajpur Road - Dangerous Pothole</text>
+  <text x="300" y="120" font-family="Arial, sans-serif" font-size="16" fill="#94a3b8" text-anchor="middle">Citizen Evidence Capture: Geo-tagged Lat 30.3165, Lon 78.0322</text>
+  <circle cx="530" cy="50" r="30" fill="#ef4444"/>
+  <text x="530" y="56" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">URGENT</text>
+</svg>

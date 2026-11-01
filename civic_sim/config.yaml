@@ -1,0 +1,288 @@
+# CitySense civic simulator: residents report incidents to the complaint portal, two department agents
+# (Municipal Corporation, Police) receive them, and an RL policy learns WHERE TO INSPECT AND WHAT TO REPAIR
+# to reach the root cause. Every number below is an ASSUMPTION for a synthetic city, not a measurement.
+seed: 11
+horizon_ticks: 40            # one episode = 40 ticks
+tick_hours: 6                # 40 x 6 h = 10 simulated days
+clock_start_day: 1
+
+grid:
+  rows: 6
+  cols: 6
+  spacing_m: 260             # block centre spacing
+  center_lat: 30.3165        # Dehradun, same anchor as complaint_module defaults
+  center_lon: 78.0322
+  ward_block: 2              # wards are 2x2 blocks -> 9 wards
+  arterial_rows: [2]         # busy roads: potholes here also cause traffic jams
+  arterial_cols: [3]
+
+# Complaint taxonomy. Municipal categories mirror complaint_module's intake classifier
+# (pothole / garbage / streetlight / drainage) and its workers.json department names.
+# noise_rate: background intensity per block per tick that has no planted cause (isolated or mistaken reports).
+categories:
+  - {id: pothole,       label: Pothole / road damage,   department: municipal, unit: "Public Works & Road Infrastructure", noise_rate: 0.0,   severity: 1.0}
+  - {id: traffic_jam,   label: Traffic congestion,      department: police,    unit: "Traffic Police",                     noise_rate: 0.02,  severity: 1.0}
+  - {id: low_pressure,  label: Low water pressure,      department: municipal, unit: "Water Supply (Jal Sansthan)",       noise_rate: 0.015, severity: 1.0}
+  - {id: drainage,      label: Drain / sewer overflow,  department: municipal, unit: "Stormwater Drainage & Sewerage",    noise_rate: 0.015, severity: 1.0}
+  - {id: foul_smell,    label: Foul smell,              department: municipal, unit: "Stormwater Drainage & Sewerage",    noise_rate: 0.015, severity: 0.8}
+  - {id: garbage,       label: Garbage not collected,   department: municipal, unit: "Sanitation & Waste Management",     noise_rate: 0.015, severity: 1.0}
+  - {id: stray_animals, label: Stray animals,           department: municipal, unit: "Sanitation & Waste Management",     noise_rate: 0.01,  severity: 0.8}
+  - {id: streetlight,   label: Streetlight not working, department: municipal, unit: "Electrical & Street Lighting",      noise_rate: 0.015, severity: 1.0}
+  - {id: theft,         label: Theft / snatching,       department: police,    unit: "Police Station (Crime)",            noise_rate: 0.01,  severity: 1.5}
+  - {id: harassment,    label: Harassment,              department: police,    unit: "Police Station (Crime)",            noise_rate: 0.008, severity: 1.5}
+  - {id: disorder,      label: Public disorder,         department: police,    unit: "Police Station (Crime)",            noise_rate: 0.01,  severity: 1.0}
+
+# Dependency layers: the city's public infrastructure maps. `match` is the public mechanism table
+# (which complaint categories an asset fault in this layer can produce). The tracer may read it;
+# it never reads which asset is actually faulty.
+layers:
+  - id: water
+    label: Water main segment
+    department: municipal
+    kind: tree               # random spanning tree rooted at the reservoir; a leak affects its downstream subtree
+    tree_root: [0, 0]
+    match: {low_pressure: 1.0, pothole: 0.4, traffic_jam: 0.2}
+    primary: [low_pressure]
+    mechanism: "a leaking main loses pressure for every block it feeds and washes out the road bed above it, which opens potholes and slows traffic"
+    inspect_label: pressure test + acoustic leak survey
+    repair_label: excavate and repair main
+    inspect_miss_prob: 0.15
+    relief_categories: []
+    relief_hops: 0
+  - id: sewer
+    label: Sewer segment
+    department: municipal
+    kind: tree               # rooted at the outfall; a blockage backs sewage up into every block draining through it
+    tree_root: [5, 5]
+    match: {drainage: 1.0, foul_smell: 1.0}
+    primary: [drainage, foul_smell]
+    mechanism: "a blocked sewer segment backs up sewage into every block that drains through it, so overflow and smell appear upstream of the blockage, not at it"
+    inspect_label: CCTV sewer camera inspection
+    repair_label: jet-rod and clear blockage
+    inspect_miss_prob: 0.1
+    relief_categories: [drainage, foul_smell]   # local desilting hides symptoms briefly
+    relief_hops: 0
+  - id: waste
+    label: Waste collection route
+    department: municipal
+    kind: route
+    num_assets: 4
+    match: {garbage: 1.0, stray_animals: 0.6, drainage: 0.3}
+    primary: [garbage]
+    mechanism: "a broken-down collection vehicle leaves its whole route uncollected; rotting waste draws stray animals and later chokes drains"
+    inspect_label: vehicle GPS / route log audit
+    repair_label: repair truck and run backlog collection
+    inspect_miss_prob: 0.05
+    relief_categories: [garbage]
+    relief_hops: 0
+  - id: streetlight
+    label: Streetlight feeder circuit
+    department: municipal
+    kind: feeder
+    num_assets: 3
+    match: {streetlight: 1.0, theft: 0.4, harassment: 0.4}
+    primary: [streetlight]
+    mechanism: "a feeder fault darkens every lamp on the circuit, and dark streets draw snatching and harassment that the police then receive"
+    inspect_label: feeder panel and transformer check
+    repair_label: repair feeder fault
+    inspect_miss_prob: 0.05
+    relief_categories: []
+    relief_hops: 0
+  - id: road
+    label: Road surface (block)
+    department: municipal
+    kind: node
+    match: {pothole: 1.0, traffic_jam: 0.5}
+    primary: [pothole]
+    mechanism: "potholes on the carriageway; on arterials they also cause traffic congestion"
+    inspect_label: road condition survey
+    repair_label: patch potholes
+    inspect_miss_prob: 0.0
+    relief_categories: []
+    relief_hops: 0
+  - id: crime
+    label: Crime hotspot (premises)
+    department: police
+    kind: radius
+    radius: 2
+    match: {theft: 1.0, harassment: 1.0, disorder: 1.0}
+    primary: [theft, harassment, disorder]
+    mechanism: "an illegal liquor or drug point draws theft, harassment and disorder into the surrounding blocks, strongest nearby"
+    inspect_label: plain-clothes investigation
+    repair_label: raid and seal premises
+    inspect_miss_prob: 0.2
+    relief_categories: [theft, harassment, disorder]   # patrol presence suppresses crime briefly
+    relief_hops: 1
+  - id: traffic
+    label: Junction / block traffic
+    department: police
+    kind: node
+    match: {traffic_jam: 1.0}
+    primary: [traffic_jam]
+    mechanism: "local congestion at a block"
+    inspect_label: traffic survey
+    repair_label: deploy traffic marshal
+    inspect_miss_prob: 0.0
+    relief_categories: [traffic_jam]
+    relief_hops: 0
+
+departments:
+  - {id: municipal, label: Municipal Corporation (Nagar Nigam), layers: [water, sewer, waste, streetlight, road], hq_block: [3, 1], hq_label: Nagar Nigam ward office}
+  - {id: police,    label: City Police,                         layers: [crime, traffic], hq_block: [1, 4], hq_label: Kotwali police station}
+
+# Hidden root causes (planted). The env samples 1..max_causes per episode; ground truth never reaches the tracer.
+causes:
+  # emissions: intensity at a block = rate * hop_factor^hop, for blocks with hop >= min_hop, starting
+  # delay_ticks + hop * spread_ticks_per_hop after onset (symptoms spread outward from where the fault started).
+  # min_zone_blocks: the fault is only planted on assets whose zone has at least this many blocks.
+  - id: water_main_leak
+    layer: water
+    weight: 1.0
+    min_zone_blocks: 2
+    pothole_spawn: 0.15      # new potholes per tick at the leak block (road bed washed out above the main)
+    pothole_hops: 0
+    emissions:               # pressure loss is felt downstream, slightly worse towards the tail ends
+      - {category: low_pressure, rate: 0.6, hop_factor: 1.05, min_hop: 0, delay_ticks: 0, spread_ticks_per_hop: 0}
+  - id: sewer_blockage
+    layer: sewer
+    weight: 1.0
+    min_zone_blocks: 3
+    emissions:               # sewage backs up into upstream blocks, not at the blocked segment; spreads 1 hop per tick
+      - {category: drainage,   rate: 1.0, hop_factor: 0.85, min_hop: 1, delay_ticks: 0, spread_ticks_per_hop: 1}
+      - {category: foul_smell, rate: 0.6, hop_factor: 0.85, min_hop: 0, delay_ticks: 1, spread_ticks_per_hop: 1}
+  - id: missed_waste_route
+    layer: waste
+    weight: 1.0
+    emissions:
+      - {category: garbage,       rate: 0.8,  hop_factor: 1.0, delay_ticks: 0}
+      - {category: stray_animals, rate: 0.4,  hop_factor: 1.0, delay_ticks: 2}
+      - {category: drainage,      rate: 0.25, hop_factor: 1.0, delay_ticks: 4}
+  - id: streetlight_feeder_fault
+    layer: streetlight
+    weight: 1.0
+    emissions:
+      - {category: streetlight, rate: 0.7,  hop_factor: 1.0, delay_ticks: 0}
+      - {category: theft,       rate: 0.35, hop_factor: 1.0, delay_ticks: 1}
+      - {category: harassment,  rate: 0.25, hop_factor: 1.0, delay_ticks: 2}
+  - id: crime_hotspot
+    layer: crime
+    weight: 1.0
+    emissions:               # incidents happen on the streets around the premises and spread outward
+      - {category: theft,      rate: 0.7, hop_factor: 0.9, delay_ticks: 0, spread_ticks_per_hop: 1}
+      - {category: disorder,   rate: 0.5, hop_factor: 0.9, delay_ticks: 0, spread_ticks_per_hop: 1}
+      - {category: harassment, rate: 0.3, hop_factor: 0.9, delay_ticks: 1, spread_ticks_per_hop: 1}
+
+episode:
+  min_causes: 1
+  max_causes: 2
+  onset_max_tick: 12         # each cause starts at a random tick in [0, onset_max_tick]
+  relief_ticks: 4            # how long a symptom-only action (desilting, patrol, marshal) hides symptoms
+
+# Independent road wear (not a planted cause): random potholes everywhere, patched for good by the road crew.
+roads:
+  random_pothole_prob: 0.01  # per block per tick
+  pothole_intensity: 0.6     # complaint intensity per open pothole
+  traffic_per_pothole: 0.5   # extra traffic_jam intensity per pothole on arterial blocks
+  max_potholes_per_block: 6
+
+citizens:
+  per_block: 10              # everyone lives in the city: 6x6 blocks x 10 = 360 residents
+  report_scale: 0.15         # P(report) = 1 - exp(-propensity * ward_factor * report_scale * intensity)
+  ward_factor_range: [0.6, 1.2]   # some wards under-report; sampled per episode
+  personas:
+    - {id: shopkeeper, label: shopkeeper,          weight: 0.25, propensity: 1.2}
+    - {id: student,    label: college student,     weight: 0.2,  propensity: 0.8}
+    - {id: elderly,    label: retired resident,    weight: 0.2,  propensity: 1.3}
+    - {id: commuter,   label: office commuter,     weight: 0.25, propensity: 0.9}
+    - {id: worker,     label: daily-wage worker,   weight: 0.1,  propensity: 0.5}
+  templates:
+    pothole:       ["Big pothole on the road near my house, two-wheelers are skidding.", "Road has caved in and there are deep potholes here."]
+    traffic_jam:   ["Traffic is stuck for a long time near our block every day.", "Severe jam on the main road here, vehicles not moving."]
+    low_pressure:  ["Very low water pressure in our taps, tank does not fill.", "Hardly any water supply since yesterday."]
+    drainage:      ["Sewer is overflowing onto the street.", "Drain water is backing up into the lane."]
+    foul_smell:    ["Unbearable sewage smell in our lane.", "Foul smell from the drains all day."]
+    garbage:       ["Garbage has not been collected, bins overflowing.", "Waste piling up on the corner, no truck came."]
+    stray_animals: ["Stray dogs and cattle around the garbage heap.", "Too many stray animals in the lane now."]
+    streetlight:   ["Streetlights not working, the whole street is dark.", "Lamps on our road are off at night."]
+    theft:         ["Phone snatching incident in our area.", "Someone stole a bike from outside the house."]
+    harassment:    ["Women are being harassed on this street at night.", "Group of men harassing passers-by here."]
+    disorder:      ["Drunk people creating nuisance in the lane.", "Fights and noise late at night near the corner."]
+
+reward:
+  complaint_weight: 0.1      # per severity-weighted new complaint (the city-wide cost of unresolved problems)
+  inspect_cost: 0.2
+  repair_cost: 0.5
+  false_repair_penalty: 0.5  # repair on a healthy water/sewer/waste/streetlight/crime asset
+  identify_bonus: 3.0        # first confirmation of a true root cause (inspection or repair finds it)
+  fix_bonus: 5.0             # the root cause is removed
+
+tracer:
+  window_ticks: 8            # recent-evidence window
+  candidates_per_layer: 2    # top-k by zone mass, by lift and by score (skipping recent negatives), deduplicated
+  count_norm: 10.0           # complaint counts are divided by this in features
+  lift_norm: 5.0
+  # deterministic hypothesis score = (cov_primary + w_secondary * cov_secondary) * min(lift / lift_norm, 1) + root_first_bonus
+  score_secondary_weight: 0.5
+  score_root_first_bonus: 0.2
+  min_score: 0.05            # tracer baseline waits below this
+  reinspect_after_ticks: 8   # a negative inspection can be a miss; allow a second look after this long
+
+# "When did it start": CUSUM on the affected zone's primary-symptom complaints per tick against the city background.
+diagnosis:
+  cusum_k: 2.0               # count only complaints above 2x the background rate
+  cusum_h: 3.0               # alarm after 3 excess complaints
+  background_floor: 0.01
+
+rl:
+  algorithm: DoubleDQN-candidate-scoring
+  hidden: [64, 64]
+  learning_rate: 0.0005
+  gamma: 0.95
+  batch_size: 64
+  buffer_capacity: 6000
+  target_update_interval: 250
+  train_episodes: 1200
+  epsilon_start: 1.0
+  epsilon_end: 0.05
+  epsilon_decay_episodes: 900
+  huber_delta: 1.0
+  grad_clip: 5.0
+  warmup_transitions: 500
+  checkpoint_path: data/civic_dqn.npz
+  # Imitation warm start (optional, 0 = off): the first N episodes take the tracer baseline's actions so
+  # the replay buffer contains successful diagnoses. Q-learning still trains on these transitions off-policy.
+  demo_episodes: 150
+
+evaluation:
+  episodes_per_scenario: 30
+  seed_offset: 300000        # final-report seeds: never used for training or for choosing settings
+  # (seeds 100000.. were used once to choose train_episodes 600 -> 1200; they are not reported)
+  policies: [rl, tracer, complaint_count, random]
+  report_path: reports/civic_rl_results.md
+  json_path: reports/civic_rl_results.json
+
+# Live service (POST /api/civic/...). The LLM writes complaint TEXT only; category, place and time come from the sim.
+live:
+  port: 8005
+  tick_interval_sec: 3.0
+  policy: rl                 # rl | tracer | complaint_count | random (rl falls back to tracer if no checkpoint)
+  llm_base_url: "http://127.0.0.1:8090/v1"
+  llm_model: "gemma-4-E2B"
+  llm_timeout_sec: 15
+  llm_max_per_tick: 2        # other complaints use the persona templates
+  log_size: 400
+  # LLM reasoning over the deterministic evidence (POST /api/civic/root-cause), same models and guardrails as
+  # city_sim: gpt-oss-120b on Groq (strict JSON schema, reasoning trace) -> gpt-oss-20b -> local Gemma -> deterministic.
+  # Key from GROQ_API_KEY or SmartCity/.env; never logged. Crew-decision explanations use the local Gemma above.
+  root_cause:
+    base_url: "https://api.groq.com/openai/v1"
+    model: "openai/gpt-oss-120b"
+    fallback_model: "openai/gpt-oss-20b"
+    reasoning_effort: "medium"
+    temperature: 0.2
+    max_tokens: 4096
+    timeout_sec: 60
+  portal_bridge:             # forward a few complaints to the main complaint portal (complaint_module, port 8001)
+    enabled: false           # off by default: every forwarded complaint triggers that service's LLM guardrail + intake
+    url: "http://127.0.0.1:8001"
+    max_per_tick: 1

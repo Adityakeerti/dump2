@@ -1,0 +1,102 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: citysense-core
+  servlet:
+    multipart:
+      max-file-size: ${MAX_UPLOAD_SIZE:10MB}
+      max-request-size: ${MAX_UPLOAD_SIZE:10MB}
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/citysense}
+    username: ${SPRING_DATASOURCE_USERNAME:citysense}
+    password: ${SPRING_DATASOURCE_PASSWORD:citysense}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate   # Flyway owns the schema; Hibernate only checks it
+    properties:
+      hibernate.jdbc.time_zone: UTC
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  jackson:
+    default-property-inclusion: non_null
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  health:
+    mail:
+      # SMTP is optional (OTP codes fall back to the log). Without this, an unset/empty SPRING_MAIL_HOST
+      # makes /actuator/health report DOWN even though the app is serving. Set true once SMTP is real.
+      enabled: ${MANAGEMENT_HEALTH_MAIL_ENABLED:false}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+citysense:
+  demo-mode: ${DEMO_MODE:1}
+  security:
+    jwt-secret: ${JWT_SECRET:dev-only-secret-change-me-please-32-bytes-min!!}
+    jwt-expiration-minutes: ${JWT_EXPIRATION_MINUTES:720}
+    internal-api-key: ${INTERNAL_API_KEY:dev-internal-key}
+    cors-allowed-origins: ${CORS_ALLOWED_ORIGINS:*}
+  seed:
+    enabled: ${SEED_USERS:true}
+    default-password: ${SEED_PASSWORD:citysense123}
+  correlation:
+    radius-meters: ${CORRELATION_RADIUS_METERS:500}
+    window-minutes: ${CORRELATION_WINDOW_MINUTES:30}
+  # Email OTP. SMTP is configured with Spring's standard SPRING_MAIL_HOST / _PORT / _USERNAME /
+  # _PASSWORD env vars; without SPRING_MAIL_HOST codes are logged (only if OTP_LOG_FALLBACK=true).
+  otp:
+    code-length: ${OTP_CODE_LENGTH:4}
+    ttl-seconds: ${OTP_TTL_SECONDS:300}
+    max-attempts: ${OTP_MAX_ATTEMPTS:5}
+    resend-cooldown-seconds: ${OTP_RESEND_COOLDOWN_SECONDS:30}
+    mail-from: ${OTP_MAIL_FROM:no-reply@citysense.local}
+    mail-subject: ${OTP_MAIL_SUBJECT:Your CitySense verification code}
+    log-fallback: ${OTP_LOG_FALLBACK:true}
+  # Map provider proxy. Defaults use the public OpenStreetMap stack; respect its usage policies
+  # (https://operations.osmfoundation.org/policies/) or point these at self-hosted servers.
+  geo:
+    # Vector street map with 3D buildings (OpenFreeMap, no key). Empty = proxied raster tiles below.
+    vector-style-url: ${GEO_VECTOR_STYLE_URL:https://tiles.openfreemap.org/styles/liberty}
+    tile-url-template: ${GEO_TILE_URL_TEMPLATE:https://tile.openstreetmap.org/{z}/{x}/{y}.png}
+    attribution: ${GEO_ATTRIBUTION:© OpenStreetMap contributors}
+    nominatim-url: ${GEO_NOMINATIM_URL:https://nominatim.openstreetmap.org}
+    osrm-url: ${GEO_OSRM_URL:https://router.project-osrm.org}
+    user-agent: ${GEO_USER_AGENT:CitySense/0.1 (+https://github.com/Adityakeerti/CitySense)}
+    public-base-url: ${GEO_PUBLIC_BASE_URL:}
+    min-zoom: ${GEO_MIN_ZOOM:3}
+    max-zoom: ${GEO_MAX_ZOOM:19}
+    tile-cache-entries: ${GEO_TILE_CACHE_ENTRIES:5000}
+    tile-cache-seconds: ${GEO_TILE_CACHE_SECONDS:86400}
+    lookup-cache-entries: ${GEO_LOOKUP_CACHE_ENTRIES:1000}
+    nominatim-min-interval-millis: ${GEO_NOMINATIM_MIN_INTERVAL_MS:1100}
+    request-timeout-seconds: ${GEO_REQUEST_TIMEOUT_SECONDS:10}
+    default-latitude: ${GEO_DEFAULT_LAT:30.3243}
+    default-longitude: ${GEO_DEFAULT_LNG:78.0418}
+    default-zoom: ${GEO_DEFAULT_ZOOM:13.5}
+    geofence-radius-meters: ${GEO_GEOFENCE_RADIUS_METERS:2500}
+    country-codes: ${GEO_COUNTRY_CODES:in}
+  civic:
+    priorities: ${CIVIC_PRIORITIES:LOW,MEDIUM,HIGH,URGENT}
+    escalation-ladder: ${CIVIC_ESCALATION_LADDER:Filed,Worker assigned,Warning 1,Warning 2,Warning 3,Warning 4,Warning 5,Ward officer,Municipal commissioner,CM portal}
+    # Per-user sliding window for POST /api/complaints; the 11th filing within an hour gets 429 + Retry-After.
+    filing-limit:
+      max-per-window: ${COMPLAINT_FILING_LIMIT_MAX:10}
+      window: ${COMPLAINT_FILING_LIMIT_WINDOW:PT1H}
+  # Python agent_service (main voice agent + planner). Unset = local keyword fallback only.
+  agent:
+    service-url: ${AGENT_SERVICE_URL:}
+    timeout-seconds: ${AGENT_TIMEOUT_SECONDS:30}
+  avatars:
+    seed-enabled: ${SEED_AVATARS:true}
+    seed-location: ${AVATAR_SEED_LOCATION:classpath:seed/avatars.json}
+    image-base-path: ${AVATAR_IMAGE_BASE_PATH:/avatars}

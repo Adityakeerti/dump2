@@ -1,0 +1,1516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CitySense Civic Grievance & Escalation System (Member C)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #1d4ed8;
+      --primary-light: #eff6ff;
+      --primary-hover: #1e40af;
+      --navy: #0f172a;
+      --blue-border: #bfdbfe;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --warning: #f59e0b;
+      --warning-bg: #fef3c7;
+      --danger: #ef4444;
+      --danger-bg: #fee2e2;
+      --success: #10b981;
+      --success-bg: #d1fae5;
+      --purple: #8b5cf6;
+      --purple-bg: #ede9fe;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding-bottom: 60px;
+    }
+
+    /* Top Navigation */
+    header {
+      background: #ffffff;
+      border-bottom: 2px solid #2563eb;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .nav-container {
+      max-width: 1480px;
+      margin: 0 auto;
+      padding: 14px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-icon {
+      width: 44px;
+      height: 44px;
+      background: #1d4ed8;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 700;
+      font-size: 22px;
+      box-shadow: 0 2px 4px rgba(29, 78, 216, 0.2);
+    }
+
+    .brand-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .brand-subtitle {
+      font-size: 0.82rem;
+      color: #2563eb;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .langgraph-badge {
+      background: #eff6ff;
+      color: #1d4ed8;
+      border: 1px solid #bfdbfe;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+
+    .user-pill {
+      background: var(--primary-light);
+      border: 1px solid var(--blue-border);
+      border-radius: 9999px;
+      padding: 6px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.85rem;
+    }
+
+    .user-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+    }
+
+    .container {
+      max-width: 1480px;
+      margin: 20px auto;
+      padding: 0 20px;
+    }
+
+    /* Simulation Control Bar */
+    .sim-bar {
+      background: white;
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--primary);
+      border-radius: 8px;
+      padding: 14px 20px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    }
+
+    .sim-status {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .pulse-dot {
+      width: 10px;
+      height: 10px;
+      background: #10b981;
+      border-radius: 50%;
+      box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+      animation: pulse-green 1.8s infinite;
+    }
+
+    .pulse-dot.paused {
+      background: #f59e0b;
+      animation: none;
+    }
+
+    @keyframes pulse-green {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+      70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+
+    .sim-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn {
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid transparent;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: var(--primary-hover); }
+
+    .btn-outline {
+      background: white;
+      border-color: #cbd5e1;
+      color: #334155;
+    }
+    .btn-outline:hover { background: #f1f5f9; border-color: #94a3b8; }
+
+    .btn-danger { background: #fee2e2; border-color: #fca5a5; color: #b91c1c; }
+    .btn-danger:hover { background: #fecaca; }
+
+    .btn-success { background: #10b981; color: white; }
+    .btn-success:hover { background: #059669; }
+
+    /* --- PIPELINE VISUAL FLOW RIBBON --- */
+    .pipeline-ribbon {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px 20px;
+      margin-bottom: 24px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+    }
+
+    .ribbon-title {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    .pipeline-steps-track {
+      display: flex;
+      align-items: center;
+      overflow-x: auto;
+      gap: 8px;
+      padding-bottom: 6px;
+    }
+
+    .p-step {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 10px 14px;
+      min-width: 155px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      transition: all 0.25s ease;
+      position: relative;
+    }
+
+    .p-step.active {
+      background: #eff6ff;
+      border-color: #2563eb;
+      box-shadow: 0 3px 10px rgba(37, 99, 235, 0.2);
+      transform: translateY(-2px);
+    }
+
+    .p-step.passed {
+      background: #f0fdf4;
+      border-color: #86efac;
+    }
+
+    .p-step.danger {
+      background: #fef2f2;
+      border-color: #f87171;
+    }
+
+    .p-step-num {
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .p-step-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .p-step-sub {
+      font-size: 0.7rem;
+      color: #64748b;
+    }
+
+    .p-arrow {
+      color: #94a3b8;
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+
+    /* Grid Layout */
+    .grid-3 {
+      display: grid;
+      grid-template-columns: 380px 480px 1fr;
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+
+    @media (max-width: 1280px) {
+      .grid-3 { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 860px) {
+      .grid-3 { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+      padding: 20px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 10px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 9px;
+      border-radius: 9999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+
+    .badge-blue { background: #dbeafe; color: #1e40af; }
+    .badge-green { background: var(--success-bg); color: #065f46; }
+    .badge-yellow { background: var(--warning-bg); color: #92400e; }
+    .badge-red { background: var(--danger-bg); color: #991b1b; }
+    .badge-purple { background: var(--purple-bg); color: #5b21b6; }
+
+    .form-group { margin-bottom: 14px; }
+
+    label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #334155;
+      margin-bottom: 4px;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 8px 11px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      outline: none;
+      transition: border 0.15s ease;
+      background: #ffffff;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    }
+
+    /* Photo Upload Area */
+    .photo-drop-zone {
+      border: 2px dashed #93c5fd;
+      background: #f8fafc;
+      border-radius: 8px;
+      padding: 12px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .photo-drop-zone:hover { background: #eff6ff; border-color: #3b82f6; }
+
+    .preview-box {
+      margin-top: 8px;
+      max-height: 140px;
+      display: none;
+      border-radius: 6px;
+      overflow: hidden;
+      border: 1px solid #cbd5e1;
+    }
+
+    .preview-box img {
+      width: 100%;
+      height: 135px;
+      object-fit: cover;
+      display: block;
+    }
+
+    .sample-buttons {
+      display: flex;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .btn-sample {
+      font-size: 0.75rem;
+      padding: 4px 8px;
+      background: #e2e8f0;
+      border-radius: 4px;
+      border: none;
+      cursor: pointer;
+      color: #334155;
+      font-weight: 500;
+    }
+    .btn-sample:hover { background: #cbd5e1; }
+
+    /* Escalation Ladder Stepper */
+    .escalation-ladder {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin: 14px 0;
+      max-height: 380px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .ladder-node {
+      display: flex;
+      align-items: center;
+      padding: 8px 12px;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .ladder-node.active {
+      border-color: #2563eb;
+      background: #eff6ff;
+      box-shadow: 0 2px 6px rgba(37, 99, 235, 0.15);
+      transform: translateX(4px);
+    }
+
+    .ladder-node.passed {
+      border-color: #cbd5e1;
+      background: #f8fafc;
+      opacity: 0.85;
+    }
+
+    .ladder-node.resolved-stage-here {
+      border: 2px solid #10b981;
+      background: #ecfdf5;
+      box-shadow: 0 3px 10px rgba(16, 185, 129, 0.2);
+      transform: translateX(4px);
+    }
+    .ladder-node.resolved-stage-here .ladder-icon {
+      background: #10b981 !important;
+      color: white !important;
+    }
+
+    .ladder-node.bypassed-step {
+      border: 1px dashed #cbd5e1;
+      background: #f8fafc;
+      opacity: 0.55;
+    }
+    .ladder-node.bypassed-step .ladder-icon {
+      background: #f1f5f9 !important;
+      color: #94a3b8 !important;
+    }
+    .ladder-node.bypassed-step .ladder-title {
+      color: #94a3b8 !important;
+    }
+    .ladder-node.bypassed-step .ladder-desc {
+      color: #94a3b8 !important;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-6px); }
+      40%, 80% { transform: translateX(6px); }
+    }
+
+    .ladder-node.escalated-red {
+      border-color: #ef4444;
+      background: #fee2e2;
+      animation: alert-pulse 2s infinite;
+    }
+
+    @keyframes alert-pulse {
+      0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+      70% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    }
+
+    .ladder-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #e2e8f0;
+      color: #475569;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.75rem;
+      margin-right: 12px;
+      flex-shrink: 0;
+    }
+
+    .ladder-node.active .ladder-icon { background: #2563eb; color: white; }
+    .ladder-node.passed .ladder-icon { background: #10b981; color: white; }
+    .ladder-node.escalated-red .ladder-icon { background: #ef4444; color: white; }
+
+    .ladder-info { flex: 1; }
+    .ladder-title { font-size: 0.82rem; font-weight: 700; color: #0f172a; }
+    .ladder-desc { font-size: 0.72rem; color: #64748b; }
+
+    /* Worker Action Island Inside UI */
+    .worker-island-box {
+      background: linear-gradient(180deg, #f0f7ff, #ffffff);
+      border: 2px solid #3b82f6;
+      border-radius: 10px;
+      padding: 16px;
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.08);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* Live Data & Message Flow Console */
+    .flow-console {
+      background: #0f172a;
+      color: #f8fafc;
+      border-radius: 10px;
+      padding: 16px;
+      font-family: 'JetBrains Mono', monospace;
+      max-height: 480px;
+      overflow-y: auto;
+      border: 1px solid #334155;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .msg-packet {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-left: 3px solid #3b82f6;
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-size: 0.78rem;
+    }
+
+    .msg-packet.intake { border-left-color: #3b82f6; }
+    .msg-packet.worker { border-left-color: #10b981; }
+    .msg-packet.warn { border-left-color: #f59e0b; }
+    .msg-packet.escalate { border-left-color: #ef4444; }
+    .msg-packet.notif { border-left-color: #a855f7; }
+
+    .msg-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      color: #94a3b8;
+      font-size: 0.72rem;
+    }
+
+    .msg-route {
+      color: #60a5fa;
+      font-weight: 700;
+    }
+
+    .msg-body {
+      color: #e2e8f0;
+      line-height: 1.4;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    .msg-json-toggle {
+      color: #93c5fd;
+      text-decoration: underline;
+      cursor: pointer;
+      font-size: 0.7rem;
+      margin-top: 4px;
+      display: inline-block;
+    }
+
+    .msg-json-pre {
+      background: #0b1120;
+      padding: 8px;
+      border-radius: 4px;
+      margin-top: 6px;
+      font-size: 0.72rem;
+      display: none;
+      overflow-x: auto;
+      color: #a5b4fc;
+    }
+
+    /* Authorities Grid */
+    .authorities-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .authority-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      position: relative;
+    }
+
+    .authority-card.active-desk {
+      border: 2px solid #ef4444;
+      background: #fffafa;
+      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.08);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Header Navigation -->
+  <header>
+    <div class="nav-container">
+      <div class="brand">
+        <div class="brand-icon">🏛️</div>
+        <div>
+          <div class="brand-title">CitySense Civic Grievance & Escalation System</div>
+          <div class="brand-subtitle">
+            <span>Member C • Civic Services & Automated Escalation</span>
+            <span class="langgraph-badge">LangGraph StateGraph Core</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex; align-items:center; gap:12px;">
+        <div class="user-pill" id="userBadge">
+          <div class="user-dot"></div>
+          <div>
+            <strong id="userName">Loading Citizen...</strong>
+            <span style="color:#64748b; font-size:0.75rem;" id="userWard"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+
+    <!-- SIMULATION CONTROL BAR -->
+    <div class="sim-bar">
+      <div class="sim-status">
+        <div class="pulse-dot" id="simPulse"></div>
+        <div>
+          <span style="font-weight: 700; font-size: 0.88rem;" id="simStatusLabel">LangGraph Coordinator Scheduler: ACTIVE</span>
+          <span style="font-size: 0.75rem; color: #64748b; display: block;">
+            StateGraph tick checking every <span id="tickIntervalDisplay">5</span>s (Accelerated demo mode)
+          </span>
+        </div>
+      </div>
+
+      <div class="sim-controls">
+        <button class="btn btn-outline" id="toggleSimBtn" onclick="toggleSimulation()">⏸️ Pause Auto-Tick</button>
+        <button class="btn btn-outline" onclick="setSpeed(2)">⚡ Fast (2s)</button>
+        <button class="btn btn-outline" onclick="setSpeed(5)">⏱️ Normal (5s)</button>
+        <button class="btn btn-danger" onclick="resetAllComplaints()">🗑️ Reset Pipeline</button>
+      </div>
+    </div>
+
+    <!-- 🌐 LANGGRAPH PIPELINE FLOW RIBBON -->
+    <div class="pipeline-ribbon">
+      <div class="ribbon-title">
+        <span>🔄 Live End-to-End LangGraph Pipeline Flow</span>
+        <span class="badge badge-blue" id="flowSelectedId">Select Complaint</span>
+      </div>
+
+      <div class="pipeline-steps-track">
+        <div class="p-step" id="step-node-upload">
+          <div class="p-step-num">Step 1</div>
+          <div class="p-step-title">📸 Citizen Upload</div>
+          <div class="p-step-sub">Photo + Geo-tag</div>
+        </div>
+        <div class="p-arrow">➔</div>
+
+        <div class="p-step" id="step-node-intake">
+          <div class="p-step-num">LangGraph Node</div>
+          <div class="p-step-title">🧠 node_intake_classifier</div>
+          <div class="p-step-sub">LLM Routing & Priority</div>
+        </div>
+        <div class="p-arrow">➔</div>
+
+        <div class="p-step" id="step-node-dispatcher">
+          <div class="p-step-num">LangGraph Node</div>
+          <div class="p-step-title">👷 node_worker_dispatcher</div>
+          <div class="p-step-sub">Match Crew & Work Order</div>
+        </div>
+        <div class="p-arrow">➔</div>
+
+        <div class="p-step" id="step-node-island">
+          <div class="p-step-num">Human Action</div>
+          <div class="p-step-title">🛠️ Worker Island</div>
+          <div class="p-step-sub">Field Inspection & Fix</div>
+        </div>
+        <div class="p-arrow">➔</div>
+
+        <div class="p-step" id="step-node-governor">
+          <div class="p-step-num">LangGraph Node</div>
+          <div class="p-step-title">⏱️ node_sla_governor</div>
+          <div class="p-step-sub">Warnings 1 to 5</div>
+        </div>
+        <div class="p-arrow">➔</div>
+
+        <div class="p-step" id="step-node-escalator">
+          <div class="p-step-num">LangGraph Node</div>
+          <div class="p-step-title">🏛️ node_authority_escalator</div>
+          <div class="p-step-sub">Ward ➔ Comm ➔ CM Portal</div>
+        </div>
+        <div class="p-arrow">➔</div>
+
+        <div class="p-step" id="step-node-notifier">
+          <div class="p-step-num">LangGraph Node</div>
+          <div class="p-step-title">📲 node_citizen_notifier</div>
+          <div class="p-step-sub">SMS/Push to Aditya Sharma</div>
+        </div>
+        <div class="p-arrow">➔</div>
+
+        <div class="p-step" id="step-node-feed">
+          <div class="p-step-num">Ecosystem Sync</div>
+          <div class="p-step-title">📡 Spring Boot Feed</div>
+          <div class="p-step-sub">com.citysense.civic</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN 3-COLUMN WORKSPACE -->
+    <div class="grid-3">
+
+      <!-- COL 1: Citizen Complaint Registration -->
+      <div class="card">
+        <div class="card-title">
+          <span>📸 1. File Grievance</span>
+          <span class="badge badge-blue">Citizen Ingestion</span>
+        </div>
+
+        <form id="complaintForm" onsubmit="handleComplaintSubmit(event)">
+          <!-- Civic Guardrail Alert Notification -->
+          <div id="guardrailAlert" style="display:none; background:#fff1f2; border:1px solid #fecdd3; border-radius:8px; padding:12px; margin-bottom:14px; animation: shake 0.4s ease-in-out;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+              <strong style="color:#be123c; font-size:0.82rem; display:flex; align-items:center; gap:6px;">
+                🛡️ Municipal Guardrail: Submission Blocked
+              </strong>
+              <span class="badge badge-red">BLOCKED</span>
+            </div>
+            <div id="guardrailAlertMsg" style="font-size:0.75rem; color:#9f1239; line-height:1.4;"></div>
+          </div>
+
+          <div class="form-group">
+            <label for="complaintTitle">Grievance Headline</label>
+            <input type="text" id="complaintTitle" placeholder="e.g. Hazardous deep pothole" required
+              value="Caved-in asphalt pothole near Clock Tower">
+          </div>
+
+          <!-- Autonomous AI Ingestion Notice (No Manual Category Needed) -->
+          <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 10px 12px; margin-bottom: 14px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+              <span style="font-size: 0.76rem; font-weight: 700; color: #1e40af; display: flex; align-items: center; gap: 5px;">
+                🤖 Municipal Agent Auto-Classification
+              </span>
+              <span class="badge badge-blue" style="font-size: 0.68rem; padding: 2px 7px;">AI Driven</span>
+            </div>
+            <p style="font-size: 0.74rem; color: #1e3a8a; margin: 0; line-height: 1.35;">
+              Citizens do not need to guess municipal departments. The Municipal Intake Agent classifies the category, department, and priority automatically from your photo and description.
+            </p>
+          </div>
+
+          <div class="form-group">
+            <label for="complaintLocation">Geo-Location & Address</label>
+            <input type="text" id="complaintLocation" value="42/3 Cross Road, Rajpur Road, Dehradun" required>
+          </div>
+
+          <div class="form-group">
+            <label for="complaintDescription">Description of Civic Hazard</label>
+            <textarea id="complaintDescription" rows="2" required>Deep pothole developed following heavy rainfall. Two two-wheelers suffered rim damage. Immediate repair required.</textarea>
+          </div>
+
+          <div class="form-group">
+            <label>Photo Evidence Attachment (Required)</label>
+            <div class="photo-drop-zone" onclick="document.getElementById('photoInput').click()">
+              <div id="dropZoneText">
+                <span style="font-size: 1.3rem;">📷</span>
+                <p style="font-weight: 600; font-size: 0.8rem; color: #2563eb;">Click to upload local photo or drag & drop</p>
+              </div>
+              <input type="file" id="photoInput" accept="image/*" style="display:none" onchange="previewFile(this)">
+              <div class="preview-box" id="previewBox">
+                <img id="previewImg" src="" alt="Evidence Preview">
+              </div>
+            </div>
+
+            <div class="sample-buttons" style="flex-wrap: wrap; gap: 6px; margin-top: 8px;">
+              <span style="font-size: 0.72rem; color: #64748b; align-self: center; width: 100%; font-weight: 600;">Quick Test Scenarios (Auto-Fills Photo & Details):</span>
+              <button type="button" class="btn-sample" onclick="loadScenario('pothole')">🛣️ Pothole Hazard</button>
+              <button type="button" class="btn-sample" onclick="loadScenario('garbage')">🗑️ Overflowing Bin</button>
+              <button type="button" class="btn-sample" onclick="loadScenario('streetlight')">💡 Dark Streetlight</button>
+              <button type="button" class="btn-sample" onclick="loadScenario('drainage')">🌊 Blocked Drainage</button>
+              <button type="button" class="btn-sample" style="background:#fee2e2; color:#991b1b; border:1px solid #fca5a5;" onclick="loadScenario('kadu_test')">🛡️ Test Guardrail ("Kadu")</button>
+            </div>
+            <input type="hidden" id="selectedSamplePhoto" value="/uploads/sample_pothole.svg">
+          </div>
+
+          <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 10px;" id="submitBtn">
+            🚀 Submit & Trigger LangGraph Ingestion
+          </button>
+        </form>
+      </div>
+
+      <!-- COL 2: Active Escalation State Machine & Worker Island -->
+      <div class="card">
+        <div class="card-title">
+          <span>🤖 2. State Machine & Worker Island</span>
+          <span class="badge badge-purple" id="activeComplaintBadge">Select Ticket</span>
+        </div>
+
+        <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+          <select id="complaintSelector" onchange="selectComplaint(this.value)" style="flex:1;">
+            <option value="">-- No complaints registered yet --</option>
+          </select>
+          <button class="btn btn-outline" onclick="loadComplaints()" title="Refresh">🔄</button>
+        </div>
+
+        <!-- 👷 DEDICATED WORKER FIELD ACTION ISLAND -->
+        <div class="worker-island-box" id="embeddedWorkerIsland">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:1.3rem;">👷</span>
+              <div>
+                <strong style="font-size:0.85rem; color:#1e40af;">Worker Field Action Island</strong>
+                <div style="font-size:0.72rem; color:#64748b;" id="islandCrewLabel">Assigned: Waiting for Ticket</div>
+              </div>
+            </div>
+            <span class="badge badge-blue" id="islandTicketStatusBadge">IDLE</span>
+          </div>
+
+          <div id="workerIslandActionArea" style="display:none; flex-direction:column; gap:8px;">
+            <label style="font-size:0.75rem; margin-bottom:2px;">On-Site Repair Execution Note</label>
+            <textarea id="embeddedWorkerNotes" rows="2" style="font-size:0.8rem;" placeholder="Enter on-site fix details..."></textarea>
+            
+            <div style="display:flex; gap:4px; flex-wrap:wrap;">
+              <button type="button" class="btn-sample" onclick="setEmbeddedPreset('🛣️ Cold-mix asphalt patch laid and compacted with roller. Lane restored.')">🛣️ Pothole Fixed</button>
+              <button type="button" class="btn-sample" onclick="setEmbeddedPreset('🗑️ Overflowing waste cleared, lime powder sanitized.')">🗑️ Waste Cleared</button>
+              <button type="button" class="btn-sample" onclick="setEmbeddedPreset('💡 Luminaire LED replaced and wiring secured.')">💡 Light Fixed</button>
+            </div>
+
+            <button class="btn btn-success" style="width:100%; justify-content:center; padding:9px;" onclick="submitEmbeddedResolution()">
+              ✅ Mark Fixed & Trigger Citizen Notification
+            </button>
+          </div>
+        </div>
+
+        <!-- Diagnostic Banners -->
+        <div id="llmDiagnosisBox" style="display:none; background:#eff6ff; border:1px solid #bfdbfe; border-radius:6px; padding:8px 12px; margin-top:12px; font-size:0.78rem; color:#1e40af;">
+          <strong>🧠 LangGraph Intake Diagnosis:</strong> <span id="llmDiagnosisText"></span>
+        </div>
+
+        <div id="citizenNotifBox" style="display:none; background:#ecfdf5; border:1px solid #6ee7b7; border-radius:6px; padding:10px 12px; margin-top:10px; font-size:0.8rem; color:#065f46;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+            <strong>📲 Citizen Notification Dispatched:</strong>
+            <span class="badge badge-green">DELIVERED TO ADITYA</span>
+          </div>
+          <div id="citizenNotifText" style="font-style:italic;"></div>
+        </div>
+
+        <div id="escalationMemoBox" style="display:none; background:#fff1f2; border:1px solid #fecdd3; border-radius:6px; padding:10px 12px; margin-top:10px; font-size:0.8rem; color:#9f1239;">
+          <strong>📜 Executive Escalation Memo:</strong>
+          <div id="escalationMemoText" style="margin-top:2px;"></div>
+        </div>
+
+        <!-- Escalation Ladder -->
+        <h4 style="font-size: 0.82rem; color: #334155; margin-top: 14px; margin-bottom: 4px;">LangGraph SLA & Escalation Ladder</h4>
+        <div class="escalation-ladder" id="escalationLadder">
+          <!-- Populated dynamically -->
+        </div>
+
+        <div style="display: flex; gap: 8px; margin-top: auto; border-top: 1px solid #e2e8f0; padding-top: 10px;">
+          <button class="btn btn-outline" id="tickBtn" onclick="manualTick()" disabled style="flex:1; justify-content:center;">
+            ⚡ Fast-Forward SLA Tick
+          </button>
+        </div>
+      </div>
+
+      <!-- COL 3: LIVE PIPELINE DATA & MESSAGE FLOW STREAM -->
+      <div class="card">
+        <div class="card-title">
+          <span>📡 3. Live Pipeline Data & Message Stream</span>
+          <span class="badge badge-green" id="msgCountBadge">0 Messages</span>
+        </div>
+        <p style="font-size:0.75rem; color:#64748b; margin-bottom:10px;">
+          Real-time message bus tracking every event, LLM reasoning packet, worker action, and SMS dispatch across the LangGraph workflow.
+        </p>
+
+        <div class="flow-console" id="flowConsole">
+          <div style="color:#64748b; font-size:0.75rem; text-align:center; padding:30px;">
+            Listening on LangGraph Event Bus...<br>Submit a complaint or tick SLA to see live packet telemetry.
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- SECTION: HIGHER AUTHORITIES PROFILES -->
+    <div class="card" style="margin-bottom: 24px;">
+      <div class="card-title">
+        <span>🏛️ 4. Simulated Higher Authorities Desks (JSON Profiles)</span>
+        <span class="badge badge-blue">Escalation Thresholds</span>
+      </div>
+      <div class="authorities-grid" id="authoritiesContainer"></div>
+    </div>
+
+    <!-- SECTION: SPRING BOOT INGESTION FEED -->
+    <div class="card">
+      <div class="card-title">
+        <span>📡 5. Spring Boot Feed API Payload (<code>GET /api/feed</code>)</span>
+        <span class="badge badge-green">Ready for com.citysense.civic</span>
+      </div>
+      <pre class="flow-console" id="feedJsonViewer" style="max-height: 260px;">Loading Feed...</pre>
+    </div>
+
+  </div>
+
+  <script>
+    let currentSelectedId = null;
+    let cachedComplaints = [];
+    let cachedAuthorities = [];
+    let autoTickEnabled = true;
+    let loggedMessageIds = new Set();
+
+    const ESCALATION_STEPS = [
+      { key: "FILED", label: "Complaint Filed", desc: "Citizen uploaded photo evidence" },
+      { key: "WORKER_ASSIGNED", label: "Worker Assigned", desc: "LangGraph routed to field crew" },
+      { key: "WARNING_1", label: "Warning 1 (20% SLA)", desc: "Coordinator issued 1st ping" },
+      { key: "WARNING_2", label: "Warning 2 (40% SLA)", desc: "Overdue alert to field crew" },
+      { key: "WARNING_3", label: "Warning 3 (60% SLA)", desc: "Department supervisor notified" },
+      { key: "WARNING_4", label: "Warning 4 (80% SLA)", desc: "Impending penalty warning" },
+      { key: "WARNING_5", label: "Warning 5 (100% Breached)", desc: "SLA breached! Bureaucratic escalation" },
+      { key: "ESCALATED_WARD_OFFICER", label: "Level 1: Ward Officer", desc: "Er. Ramesh Verma desk" },
+      { key: "ESCALATED_MUNICIPAL_COMMISSIONER", label: "Level 2: Municipal Commissioner", desc: "Shri Alok Negi, IAS desk" },
+      { key: "ESCALATED_CM_PORTAL", label: "Level 3: CM Portal (Apex)", desc: "Helpline 1905 / State Directorate" },
+      { key: "RESOLVED", label: "Issue Resolved", desc: "Field work verified & case closed" }
+    ];
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      await loadUserProfile();
+      await loadAuthorities();
+      await loadComplaints();
+      await refreshFeed();
+      useSample('/uploads/sample_pothole.svg');
+
+      setInterval(async () => {
+        await loadComplaints(false);
+        await refreshFeed();
+      }, 2500);
+    });
+
+    async function loadUserProfile() {
+      try {
+        const res = await fetch('/api/user');
+        const user = await res.json();
+        document.getElementById('userName').textContent = `${user.full_name} (${user.user_id})`;
+        document.getElementById('userWard').textContent = ` • ${user.ward}`;
+        document.getElementById('complaintLocation').value = user.address;
+      } catch (e) {
+        console.error("Failed to load user profile:", e);
+      }
+    }
+
+    async function loadAuthorities() {
+      try {
+        const res = await fetch('/api/authorities');
+        cachedAuthorities = await res.json();
+        renderAuthorities();
+      } catch (e) {
+        console.error("Failed to load authorities:", e);
+      }
+    }
+
+    function renderAuthorities() {
+      const container = document.getElementById('authoritiesContainer');
+      container.innerHTML = '';
+
+      cachedAuthorities.forEach(auth => {
+        const onDeskCount = cachedComplaints.filter(c => 
+          c.current_authority && c.current_authority.id === auth.id && c.status !== 'RESOLVED'
+        ).length;
+
+        const isDeskActive = onDeskCount > 0;
+        const card = document.createElement('div');
+        card.className = `authority-card ${isDeskActive ? 'active-desk' : ''}`;
+        card.innerHTML = `
+          <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+            <div style="font-size:1.6rem;">${auth.avatar || '🏛️'}</div>
+            <div style="flex:1;">
+              <div style="font-weight:700; font-size:0.92rem; color:#0f172a;">${auth.name}</div>
+              <div style="font-size:0.75rem; color:#2563eb; font-weight:600;">${auth.designation} (Level ${auth.level})</div>
+            </div>
+            ${isDeskActive ? `<span class="badge badge-red">⚠️ ${onDeskCount} Escalated</span>` : `<span class="badge badge-blue">Normal</span>`}
+          </div>
+          <div style="font-size:0.75rem; color:#475569; margin-bottom:4px;">
+            <strong>Dept:</strong> ${auth.department}
+          </div>
+          <div style="font-size:0.72rem; color:#64748b; border-top:1px dashed #e2e8f0; padding-top:6px; margin-top:6px;">
+            <div><strong>Jurisdiction:</strong> ${auth.jurisdiction}</div>
+            <div><strong>Escalation Trigger:</strong> ${auth.escalation_trigger}</div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    async function loadComplaints(updateSelect = true) {
+      try {
+        const res = await fetch('/api/complaints');
+        cachedComplaints = await res.json();
+
+        const selector = document.getElementById('complaintSelector');
+        const prevValue = selector.value || currentSelectedId;
+
+        if (updateSelect) {
+          selector.innerHTML = '';
+          if (cachedComplaints.length === 0) {
+            selector.innerHTML = '<option value="">-- No complaints registered yet --</option>';
+            currentSelectedId = null;
+          } else {
+            cachedComplaints.forEach(c => {
+              const opt = document.createElement('option');
+              opt.value = c.tracking_id;
+              opt.textContent = `[${c.tracking_id}] ${c.title.substring(0, 32)}... (${c.status})`;
+              selector.appendChild(opt);
+            });
+
+            if (prevValue && cachedComplaints.some(c => c.tracking_id === prevValue)) {
+              selector.value = prevValue;
+              currentSelectedId = prevValue;
+            } else {
+              selector.value = cachedComplaints[0].tracking_id;
+              currentSelectedId = cachedComplaints[0].tracking_id;
+            }
+          }
+        }
+
+        renderSelectedComplaint();
+        renderAuthorities();
+        updateFlowConsole();
+      } catch (e) {
+        console.error("Failed to fetch complaints:", e);
+      }
+    }
+
+    function selectComplaint(id) {
+      currentSelectedId = id;
+      renderSelectedComplaint();
+    }
+
+    function renderSelectedComplaint() {
+      const ladder = document.getElementById('escalationLadder');
+      const tickBtn = document.getElementById('tickBtn');
+      const badge = document.getElementById('activeComplaintBadge');
+      const islandArea = document.getElementById('workerIslandActionArea');
+      const crewLabel = document.getElementById('islandCrewLabel');
+      const islandStatus = document.getElementById('islandTicketStatusBadge');
+      const flowSelectedBadge = document.getElementById('flowSelectedId');
+
+      const complaint = cachedComplaints.find(c => c.tracking_id === currentSelectedId);
+
+      if (!complaint) {
+        badge.textContent = "No Ticket Selected";
+        badge.className = "badge badge-blue";
+        flowSelectedBadge.textContent = "No Ticket Selected";
+        islandArea.style.display = 'none';
+        crewLabel.textContent = "Assigned: Waiting for Ticket";
+        islandStatus.textContent = "IDLE";
+        ladder.innerHTML = '<p style="color:#64748b; font-size:0.8rem; padding: 20px; text-align: center;">Register a complaint on the left to activate the LangGraph pipeline.</p>';
+        tickBtn.disabled = true;
+        resetPipelineRibbon();
+        return;
+      }
+
+      if (complaint.status === 'RESOLVED') {
+        const stageObj = ESCALATION_STEPS.find(s => s.key === (complaint.resolved_at_stage || 'WORKER_ASSIGNED'));
+        const stageLabel = stageObj ? stageObj.label : 'Worker Stage';
+        flowSelectedBadge.textContent = `${complaint.tracking_id} (Resolved at ${stageLabel})`;
+        badge.textContent = `${complaint.tracking_id} • RESOLVED (at ${stageLabel})`;
+        badge.className = "badge badge-green";
+      } else {
+        flowSelectedBadge.textContent = `${complaint.tracking_id} (${complaint.status})`;
+        badge.textContent = `${complaint.tracking_id} • ${complaint.status}`;
+        badge.className = complaint.status.includes('ESCALATED') ? "badge badge-red" : 
+                          complaint.status.includes('WARNING') ? "badge badge-yellow" : "badge badge-blue";
+      }
+
+      // Configure Worker Island inside UI
+      if (complaint.assigned_worker) {
+        crewLabel.innerHTML = `Assigned: <strong style="color:#1d4ed8;">${complaint.assigned_worker.name}</strong> (${complaint.assigned_worker.team})`;
+      }
+      islandStatus.textContent = complaint.status === 'RESOLVED' ? "RESOLVED (Closed)" : complaint.status;
+      islandStatus.className = complaint.status === 'RESOLVED' ? "badge badge-green" : "badge badge-blue";
+
+      if (complaint.status === 'RESOLVED') {
+        islandArea.style.display = 'none';
+      } else {
+        islandArea.style.display = 'flex';
+      }
+
+      tickBtn.disabled = complaint.status === 'RESOLVED';
+
+      // Diagnostics & Notif Display
+      const diagBox = document.getElementById('llmDiagnosisBox');
+      const diagText = document.getElementById('llmDiagnosisText');
+      if (complaint.llm_reasoning) {
+        diagBox.style.display = 'block';
+        diagText.textContent = complaint.llm_reasoning;
+      } else {
+        diagBox.style.display = 'none';
+      }
+
+      const notifBox = document.getElementById('citizenNotifBox');
+      const notifText = document.getElementById('citizenNotifText');
+      if (complaint.citizen_notification) {
+        notifBox.style.display = 'block';
+        notifText.textContent = `"${complaint.citizen_notification.message}" (${complaint.citizen_notification.channel})`;
+      } else {
+        notifBox.style.display = 'none';
+      }
+
+      const memoBox = document.getElementById('escalationMemoBox');
+      const memoText = document.getElementById('escalationMemoText');
+      if (complaint.escalation_memo) {
+        memoBox.style.display = 'block';
+        memoText.textContent = complaint.escalation_memo;
+      } else {
+        memoBox.style.display = 'none';
+      }
+
+      // Update Pipeline Ribbon Visual State
+      updatePipelineRibbon(complaint);
+
+      // Render Ladder Nodes
+      ladder.innerHTML = '';
+
+      if (complaint.status === 'RESOLVED') {
+        // Show EXACT stage where issue was resolved; do NOT tick all subsequent boxes!
+        const resolvedStageKey = complaint.resolved_at_stage || 'WORKER_ASSIGNED';
+        const resolvedIdx = ESCALATION_STEPS.findIndex(s => s.key === resolvedStageKey);
+
+        ESCALATION_STEPS.forEach((step, idx) => {
+          let nodeClass = "ladder-node";
+          let iconText = (idx + 1).toString();
+          let rightBadge = '';
+          let customDesc = step.desc;
+
+          if (idx < resolvedIdx) {
+            nodeClass += " passed";
+            iconText = "✓";
+            rightBadge = '<span class="badge badge-green" style="font-size:0.65rem;">PASSED</span>';
+          } else if (idx === resolvedIdx) {
+            nodeClass += " resolved-stage-here";
+            iconText = "✅";
+            rightBadge = '<span class="badge badge-green" style="font-weight:700;">RESOLVED HERE</span>';
+            const workerName = complaint.assigned_worker ? complaint.assigned_worker.name : 'Municipal Crew';
+            customDesc = `✓ Fixed at this stage by ${workerName}: "${complaint.resolution_note || 'Work verified'}"`;
+          } else if (step.key === 'RESOLVED') {
+            nodeClass += " passed";
+            iconText = "✓";
+            rightBadge = '<span class="badge badge-green">TICKET CLOSED</span>';
+            customDesc = "Work verified on-site. Citizen notified & SLA escalation halted.";
+          } else {
+            // Unreached higher escalation levels were BYPASSED / PREVENTED!
+            nodeClass += " bypassed-step";
+            iconText = "—";
+            rightBadge = '<span class="badge" style="background:#f1f5f9; color:#94a3b8; font-size:0.65rem;">BYPASSED (Resolved Early)</span>';
+            customDesc = "Escalation halted: Resolved before SLA countdown reached this level.";
+          }
+
+          const node = document.createElement('div');
+          node.className = nodeClass;
+          node.innerHTML = `
+            <div class="ladder-icon">${iconText}</div>
+            <div class="ladder-info">
+              <div class="ladder-title">${step.label}</div>
+              <div class="ladder-desc">${customDesc}</div>
+            </div>
+            ${rightBadge}
+          `;
+          ladder.appendChild(node);
+        });
+
+      } else {
+        // Active in-flight complaint ladder
+        const activeIdx = ESCALATION_STEPS.findIndex(s => s.key === complaint.status);
+        ESCALATION_STEPS.forEach((step, idx) => {
+          let nodeClass = "ladder-node";
+          let iconText = (idx + 1).toString();
+
+          if (idx === activeIdx) {
+            nodeClass += step.key.includes('ESCALATED') || step.key === 'WARNING_5' ? " escalated-red" : " active";
+            iconText = step.key.includes('ESCALATED') ? "⚠️" : "⚡";
+          } else if (idx < activeIdx) {
+            nodeClass += " passed";
+            iconText = "✓";
+          }
+
+          const node = document.createElement('div');
+          node.className = nodeClass;
+          node.innerHTML = `
+            <div class="ladder-icon">${iconText}</div>
+            <div class="ladder-info">
+              <div class="ladder-title">${step.label}</div>
+              <div class="ladder-desc">${step.desc}</div>
+            </div>
+            ${idx === activeIdx ? `<span class="badge ${step.key.includes('ESCALATED') ? 'badge-red' : 'badge-blue'}">CURRENT</span>` : ''}
+          `;
+          ladder.appendChild(node);
+        });
+      }
+    }
+
+    function resetPipelineRibbon() {
+      ['step-node-upload', 'step-node-intake', 'step-node-dispatcher', 'step-node-island', 'step-node-governor', 'step-node-escalator', 'step-node-notifier', 'step-node-feed'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.className = 'p-step';
+      });
+    }
+
+    function updatePipelineRibbon(c) {
+      resetPipelineRibbon();
+      const setStep = (id, cls) => { const el = document.getElementById(id); if (el) el.className = `p-step ${cls}`; };
+
+      setStep('step-node-upload', 'passed');
+      setStep('step-node-intake', 'passed');
+      setStep('step-node-dispatcher', 'passed');
+
+      if (c.status === 'RESOLVED') {
+        setStep('step-node-island', 'passed');
+        setStep('step-node-notifier', 'active');
+        setStep('step-node-feed', 'passed');
+      } else if (c.status.includes('ESCALATED')) {
+        setStep('step-node-island', 'danger');
+        setStep('step-node-governor', 'danger');
+        setStep('step-node-escalator', 'active');
+        setStep('step-node-feed', 'active');
+      } else if (c.status.includes('WARNING')) {
+        setStep('step-node-island', 'active');
+        setStep('step-node-governor', 'active');
+        setStep('step-node-feed', 'active');
+      } else {
+        setStep('step-node-island', 'active');
+        setStep('step-node-feed', 'active');
+      }
+    }
+
+    /* Update Flow Console Event Bus */
+    function updateFlowConsole() {
+      const consoleBox = document.getElementById('flowConsole');
+      const badge = document.getElementById('msgCountBadge');
+
+      const allEvents = [];
+      cachedComplaints.forEach(c => {
+        if (c.timeline) {
+          c.timeline.forEach(t => {
+            allEvents.push({
+              tracking_id: c.tracking_id,
+              complaint_title: c.title,
+              category: c.category,
+              ...t
+            });
+          });
+        }
+      });
+
+      // Sort by timestamp descending
+      allEvents.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+      badge.textContent = `${allEvents.length} Messages in Bus`;
+
+      if (allEvents.length === 0) return;
+
+      consoleBox.innerHTML = '';
+      allEvents.forEach((evt, idx) => {
+        let typeClass = "intake";
+        let routeLabel = "Citizen ➔ LangGraph Intake";
+
+        if (evt.action === "WORKER_ASSIGNED") {
+          typeClass = "intake";
+          routeLabel = "LangGraph: node_intake_classifier ➔ node_worker_dispatcher";
+        } else if (evt.action.startsWith("WARNING")) {
+          typeClass = "warn";
+          routeLabel = "LangGraph: node_sla_governor ➔ Field Crew";
+        } else if (evt.action.startsWith("ESCALATE")) {
+          typeClass = "escalate";
+          routeLabel = "LangGraph: node_authority_escalator ➔ Executive Desk";
+        } else if (evt.action === "RESOLVED") {
+          typeClass = "worker";
+          routeLabel = "Worker Island ➔ LangGraph: node_resolution_handler";
+        }
+
+        const packet = document.createElement('div');
+        packet.className = `msg-packet ${typeClass}`;
+        packet.innerHTML = `
+          <div class="msg-header">
+            <span class="msg-route">${routeLabel}</span>
+            <span>${new Date(evt.timestamp).toLocaleTimeString()} • Ticket: <b>${evt.tracking_id}</b></span>
+          </div>
+          <div class="msg-body">
+            <strong>${evt.action}:</strong> ${escapeHtml(evt.message)}
+          </div>
+          <span class="msg-json-toggle" onclick="toggleJson('json-${idx}')">Inspect Data Packet JSON ▾</span>
+          <pre class="msg-json-pre" id="json-${idx}">${JSON.stringify(evt, null, 2)}</pre>
+        `;
+        consoleBox.appendChild(packet);
+      });
+    }
+
+    function toggleJson(id) {
+      const el = document.getElementById(id);
+      if (el) el.style.display = el.style.display === 'block' ? 'none' : 'block';
+    }
+
+    async function handleComplaintSubmit(e) {
+      e.preventDefault();
+      const submitBtn = document.getElementById('submitBtn');
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Processing with LangGraph Engine...";
+
+      const formData = new FormData();
+      formData.append('title', document.getElementById('complaintTitle').value);
+      // Notice: No manual category sent; backend Municipal Agent detects from photo & text
+      formData.append('description', document.getElementById('complaintDescription').value);
+      formData.append('address', document.getElementById('complaintLocation').value);
+
+      const fileInput = document.getElementById('photoInput');
+      if (fileInput.files && fileInput.files[0]) {
+        formData.append('photo', fileInput.files[0]);
+      } else {
+        formData.append('sample_photo', document.getElementById('selectedSamplePhoto').value);
+      }
+
+      try {
+        const res = await fetch('/api/complaints', { method: 'POST', body: formData });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          const alertBox = document.getElementById('guardrailAlert');
+          const alertMsg = document.getElementById('guardrailAlertMsg');
+          if (res.status === 422 && errData.detail && errData.detail.error === 'CIVIC_GUARDRAIL_BLOCKED') {
+            alertMsg.textContent = errData.detail.message || "Input rejected by Municipal Guardrail: Invalid civic issue.";
+            alertBox.style.display = 'block';
+            alertBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            return;
+          }
+          throw new Error(errData.detail?.message || errData.detail || "Submission failed");
+        }
+
+        document.getElementById('guardrailAlert').style.display = 'none';
+        const created = await res.json();
+        currentSelectedId = created.tracking_id;
+        await loadComplaints(true);
+        await refreshFeed();
+      } catch (err) {
+        alert("Error filing complaint: " + err.message);
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "🚀 Submit & Trigger LangGraph Ingestion";
+      }
+    }
+
+    function previewFile(input) {
+      if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          document.getElementById('previewImg').src = e.target.result;
+          document.getElementById('previewBox').style.display = 'block';
+          document.getElementById('dropZoneText').style.display = 'none';
+        }
+        reader.readAsDataURL(input.files[0]);
+      }
+    }
+
+    function useSample(url) {
+      document.getElementById('selectedSamplePhoto').value = url;
+      document.getElementById('previewImg').src = url;
+      document.getElementById('previewBox').style.display = 'block';
+      document.getElementById('dropZoneText').style.display = 'none';
+      document.getElementById('photoInput').value = '';
+    }
+
+    function loadScenario(type) {
+      document.getElementById('guardrailAlert').style.display = 'none';
+
+      if (type === 'pothole') {
+        document.getElementById('complaintTitle').value = "Caved-in asphalt pothole near Clock Tower";
+        document.getElementById('complaintDescription').value = "Deep pothole developed following rainfall. Vehicles suffering axle damage.";
+        document.getElementById('complaintLocation').value = "Rajpur Road near Clock Tower, Ward 14, Dehradun";
+        useSample('/uploads/sample_pothole.svg');
+      } else if (type === 'garbage') {
+        document.getElementById('complaintTitle').value = "Overflowing waste dumpster creating sanitation hazard";
+        document.getElementById('complaintDescription').value = "Public bin overflowing for 3 days on pedestrian walkway. Foul smell and stray animal nuisance.";
+        document.getElementById('complaintLocation').value = "Paltan Bazaar Market, Ward 14, Dehradun";
+        useSample('/uploads/sample_garbage.svg');
+      } else if (type === 'streetlight') {
+        document.getElementById('complaintTitle').value = "Streetlights blackout on Cross Road stretch";
+        document.getElementById('complaintDescription').value = "Series of 4 streetlights dark. Hazardous night visibility for pedestrians and vehicles.";
+        document.getElementById('complaintLocation').value = "42/3 Cross Road, Rajpur Road, Dehradun";
+        useSample('/uploads/sample_pothole.svg');
+      } else if (type === 'drainage') {
+        document.getElementById('complaintTitle').value = "Stormwater drain blocked causing waterlogging";
+        document.getElementById('complaintDescription').value = "Monsoon drain grating choked with silt and debris. 1.5 ft water ponding on roadway.";
+        document.getElementById('complaintLocation').value = "Haridwar By-pass Road, Ward 14, Dehradun";
+        useSample('/uploads/sample_garbage.svg');
+      } else if (type === 'kadu_test') {
+        document.getElementById('complaintTitle').value = "Kadu";
+        document.getElementById('complaintDescription').value = "Kadu";
+        document.getElementById('complaintLocation').value = "Rajpur Road, Ward 14, Dehradun";
+        useSample('/uploads/sample_pothole.svg');
+      }
+    }
+
+    async function manualTick() {
+      if (!currentSelectedId) return;
+      try {
+        await fetch(`/api/complaints/${currentSelectedId}/escalate-tick`, { method: 'POST' });
+        await loadComplaints(false);
+        await refreshFeed();
+      } catch (e) {
+        console.error("Tick error:", e);
+      }
+    }
+
+    function setEmbeddedPreset(note) {
+      document.getElementById('embeddedWorkerNotes').value = note;
+    }
+
+    async function submitEmbeddedResolution() {
+      if (!currentSelectedId) return;
+      const note = document.getElementById('embeddedWorkerNotes').value.trim() || 'Work order completed and verified.';
+      try {
+        await fetch(`/api/complaints/${currentSelectedId}/resolve`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ resolution_note: note })
+        });
+        document.getElementById('embeddedWorkerNotes').value = '';
+        await loadComplaints(false);
+        await refreshFeed();
+      } catch (e) {
+        alert("Resolution error: " + e.message);
+      }
+    }
+
+    async function refreshFeed() {
+      try {
+        const res = await fetch('/api/feed');
+        const data = await res.json();
+        document.getElementById('feedJsonViewer').textContent = JSON.stringify(data, null, 2);
+      } catch (e) {
+        console.error("Failed to refresh feed:", e);
+      }
+    }
+
+    async function toggleSimulation() {
+      autoTickEnabled = !autoTickEnabled;
+      const res = await fetch(`/api/simulation/toggle?enabled=${autoTickEnabled}`, { method: 'POST' });
+      const data = await res.json();
+      
+      const btn = document.getElementById('toggleSimBtn');
+      const pulse = document.getElementById('simPulse');
+      const label = document.getElementById('simStatusLabel');
+
+      if (data.auto_tick_enabled) {
+        btn.textContent = "⏸️ Pause Auto-Tick";
+        pulse.classList.remove('paused');
+        label.textContent = "LangGraph Coordinator Scheduler: ACTIVE";
+      } else {
+        btn.textContent = "▶️ Resume Auto-Tick";
+        pulse.classList.add('paused');
+        label.textContent = "LangGraph Coordinator Scheduler: PAUSED";
+      }
+    }
+
+    async function setSpeed(intervalSec) {
+      await fetch(`/api/simulation/toggle?interval=${intervalSec}`, { method: 'POST' });
+      document.getElementById('tickIntervalDisplay').textContent = intervalSec;
+    }
+
+    async function resetAllComplaints() {
+      if (confirm("Reset all complaints and message telemetry?")) {
+        await fetch('/api/simulation/reset', { method: 'POST' });
+        currentSelectedId = null;
+        await loadComplaints(true);
+        await refreshFeed();
+      }
+    }
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+  </script>
+</body>
+</html>

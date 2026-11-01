@@ -1,0 +1,44 @@
+[
+  {
+    "id": "auth-ward-14",
+    "name": "Er. Ramesh Verma",
+    "designation": "Ward Executive Officer",
+    "department": "Ward 14 (Rajpur Road), Dehradun Municipal Corporation",
+    "level": 1,
+    "tier_name": "Ward Officer",
+    "email": "ward14.officer@nagarnigamdehradun.gov.in",
+    "phone": "+91 135 271 4410",
+    "jurisdiction": "Ward 14 - Rajpur Road & Dalanwala North",
+    "sla_hours": 12,
+    "escalation_trigger": "Warning 5 SLA Breach by Municipal Worker",
+    "avatar": "🏛️"
+  },
+  {
+    "id": "auth-commissioner-dmc",
+    "name": "Shri Alok Negi, IAS",
+    "designation": "Municipal Commissioner",
+    "department": "Office of the Municipal Commissioner, Dehradun Nagar Nigam",
+    "level": 2,
+    "tier_name": "Municipal Commissioner",
+    "email": "commissioner@nagarnigamdehradun.gov.in",
+    "phone": "+91 135 265 2400",
+    "jurisdiction": "Dehradun Municipal Corporation Area (100 Wards)",
+    "sla_hours": 24,
+    "escalation_trigger": "Ward Officer SLA Inaction Overdue",
+    "avatar": "⚖️"
+  },
+  {
+    "id": "auth-cm-portal",
+    "name": "CM Grievance Redressal Cell (Helpline 1905)",
+    "designation": "Principal Secretary, Urban Development",
+    "department": "State Public Grievance Redressal Directorate, Govt. of Uttarakhand",
+    "level": 3,
+    "tier_name": "CM Portal / State Urban Directorate",
+    "email": "cm.grievance@uk.gov.in",
+    "phone": "1905 / +91 135 271 0101",
+    "jurisdiction": "Statewide Apex Grievance Oversight",
+    "sla_hours": 48,
+    "escalation_trigger": "Municipal Corporation Failure / Apex State Oversight",
+    "avatar": "🇮🇳"
+  }
+]

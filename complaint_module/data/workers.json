@@ -1,0 +1,42 @@
+[
+  {
+    "id": "WRK-ROADS-03",
+    "name": "Rakesh Rawat",
+    "team": "Roads Rapid Repair Unit #3",
+    "department": "Public Works & Road Infrastructure",
+    "category_match": ["pothole", "road_damage", "footpath", "manhole"],
+    "phone": "+91 94120 11002",
+    "status": "Available",
+    "rating": 4.8
+  },
+  {
+    "id": "WRK-SANI-14",
+    "name": "Sunil Kumar",
+    "team": "Ward 14 Solid Waste & Sanitation Squad",
+    "department": "Sanitation & Waste Management",
+    "category_match": ["garbage", "waste_dump", "debris", "dead_animal"],
+    "phone": "+91 94120 11005",
+    "status": "Available",
+    "rating": 4.6
+  },
+  {
+    "id": "WRK-ELEC-02",
+    "name": "Manoj Bhatt",
+    "team": "Civic Streetlighting & Electrical Crew B",
+    "department": "Electrical & Street Lighting",
+    "category_match": ["streetlight", "wire_fault", "dark_spot", "pole_damage"],
+    "phone": "+91 94120 11008",
+    "status": "Available",
+    "rating": 4.9
+  },
+  {
+    "id": "WRK-DRAIN-07",
+    "name": "Vipin Joshi",
+    "team": "Monsoon Drainage & Waterlogging Taskforce",
+    "department": "Stormwater Drainage & Sewerage",
+    "category_match": ["drainage", "water_logging", "overflow", "sewer_block"],
+    "phone": "+91 94120 11012",
+    "status": "Available",
+    "rating": 4.7
+  }
+]

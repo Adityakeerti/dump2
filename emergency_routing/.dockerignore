@@ -1,0 +1,7 @@
+__pycache__
+*.pyc
+.pytest_cache
+.env
+scratch_test_*.py
+check_free_models.py
+tests

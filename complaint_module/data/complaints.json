@@ -1,0 +1,108 @@
+[
+  {
+    "tracking_id": "CMP-2026-EA1DA8",
+    "title": "Potholes and Road Damage at clement town",
+    "category": "pothole",
+    "description": "i want to file a complaint about pothole in clement town",
+    "photo_url": "/uploads/sample_pothole.svg",
+    "location": {
+      "lat": 30.269,
+      "lng": 78.009,
+      "address": "clement town",
+      "ward": "Ward 14 - Rajpur Road"
+    },
+    "citizen": {
+      "user_id": "CIT-2026-8921",
+      "name": "Aditya Sharma",
+      "email": "aditya.sharma@city.gov.in",
+      "phone": "+91 98765 43210",
+      "ward": "Ward 14 - Rajpur Road"
+    },
+    "status": "RESOLVED",
+    "priority": "HIGH",
+    "assigned_worker": {
+      "id": "WRK-ROADS-03",
+      "name": "Rakesh Rawat",
+      "team": "Roads Rapid Repair Unit #3",
+      "department": "Public Works & Road Infrastructure",
+      "phone": "+91 94120 11002",
+      "rating": 4.8
+    },
+    "coordinator_agent": "Municipal Coordinator AI Agent",
+    "warnings_count": 3,
+    "current_authority": null,
+    "sla_seconds": 30,
+    "sla_remaining_seconds": 12,
+    "timeline": [
+      {
+        "id": "evt-7dd0e800",
+        "timestamp": "2026-10-31T19:40:08.257521+00:00",
+        "actor": "CITIZEN",
+        "actor_name": "Aditya Sharma",
+        "action": "COMPLAINT_FILED",
+        "message": "Citizen uploaded photo evidence and registered civic grievance at clement town.",
+        "badge_type": "info"
+      },
+      {
+        "id": "evt-032b62e5",
+        "timestamp": "2026-10-31T19:40:08.810307+00:00",
+        "actor": "MUNICIPAL_AGENT",
+        "actor_name": "Municipal Intake Agent (LangGraph)",
+        "action": "WORKER_ASSIGNED",
+        "message": "LangGraph Ingestion Node processed report (LangGraph Engine). Auto-routed to Public Works & Road Infrastructure [Priority: HIGH]. Assigned worker: Rakesh Rawat (Roads Rapid Repair Unit #3). Diagnosis: Detected road pavement cavity keywords impacting vehicular transit safety.",
+        "badge_type": "info"
+      },
+      {
+        "id": "evt-a1991510",
+        "timestamp": "2026-10-31T19:40:12.130725+00:00",
+        "actor": "MUNICIPAL_COORDINATOR_AGENT",
+        "actor_name": "Municipal Coordinator Agent (LangGraph)",
+        "action": "WARNING_1",
+        "message": "Warning 1/5 dispatched to worker Rakesh Rawat. SLA countdown active (20% elapsed).",
+        "badge_type": "warning"
+      },
+      {
+        "id": "evt-512fcdad",
+        "timestamp": "2026-10-31T19:40:17.132916+00:00",
+        "actor": "MUNICIPAL_COORDINATOR_AGENT",
+        "actor_name": "Municipal Coordinator Agent (LangGraph)",
+        "action": "WARNING_2",
+        "message": "Warning 2/5 issued. Task status pending on-site progress. 40% SLA elapsed.",
+        "badge_type": "warning"
+      },
+      {
+        "id": "evt-0c884125",
+        "timestamp": "2026-10-31T19:40:22.135143+00:00",
+        "actor": "MUNICIPAL_COORDINATOR_AGENT",
+        "actor_name": "Municipal Coordinator Agent (LangGraph)",
+        "action": "WARNING_3",
+        "message": "Warning 3/5 issued. 60% SLA elapsed. Department supervisor notified of crew inaction.",
+        "badge_type": "warning"
+      },
+      {
+        "id": "evt-bcc025fe",
+        "timestamp": "2026-10-31T19:40:26.390808+00:00",
+        "actor": "WORKER",
+        "actor_name": "Rakesh Rawat",
+        "action": "RESOLVED",
+        "message": "Complaint resolved at stage 'WARNING_3' by Rakesh Rawat. Resolution note: 'Repaired and inspected on site (demo).'. LangGraph Coordinator halted escalation ladder. Citizen notified: \"Dear Aditya Sharma, your grievance [CMP-2026-EA1DA8] at clement town has been successfully RESOLVED by Rakesh Rawat. Work done: 'Repaired and inspected on site (demo).'. Thank you for helping keep Dehradun clean & safe!\"",
+        "badge_type": "success"
+      }
+    ],
+    "created_at": "2026-10-31T19:40:08.257521+00:00",
+    "updated_at": "2026-10-31T19:40:26.390512+00:00",
+    "resolution_note": "Repaired and inspected on site (demo).",
+    "resolution_time": "2026-10-31T19:40:26.390512+00:00",
+    "resolved_at_stage": "WARNING_3",
+    "future_springboot_synced": false,
+    "llm_reasoning": "Detected road pavement cavity keywords impacting vehicular transit safety.",
+    "citizen_notification": {
+      "recipient": "Aditya Sharma",
+      "channel": "SMS & Civic Mobile Push Notification",
+      "message": "Dear Aditya Sharma, your grievance [CMP-2026-EA1DA8] at clement town has been successfully RESOLVED by Rakesh Rawat. Work done: 'Repaired and inspected on site (demo).'. Thank you for helping keep Dehradun clean & safe!",
+      "sent_at": "2026-10-31T19:40:26.390808+00:00",
+      "llm_powered": false
+    },
+    "escalation_memo": null
+  }
+]
