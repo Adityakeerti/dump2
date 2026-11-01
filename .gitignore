@@ -28,8 +28,8 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+/lib/
+/lib64/
 parts/
 sdist/
 var/
@@ -51,6 +51,8 @@ web-build/
 *.tsbuildinfo
 
 # IDE & OS
+.git_backup/
+*.git_backup/
 .idea/
 *.iml
 .vscode/
